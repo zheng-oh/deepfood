@@ -16,10 +16,15 @@ const _sfc_main = {
         height: 0
       },
       cursorInfo: {
+        x: 100,
+        y: 100,
+        radius: 10,
+        color: "red"
+      },
+      touchInfo: {
         x: 0,
         y: 0,
-        radius: 0,
-        color: "red"
+        isDragging: false
       },
       ctx: null,
       drp: 0,
@@ -30,6 +35,18 @@ const _sfc_main = {
     };
   },
   methods: {
+    tap: function(e) {
+      this.x = this.old.x;
+      this.y = this.old.y;
+      this.$nextTick(function() {
+        this.x = 30;
+        this.y = 30;
+      });
+    },
+    onChange: function(e) {
+      this.old.x = e.detail.x;
+      this.old.y = e.detail.y;
+    },
     deleteImage() {
       this.imgInfo.url = "";
     },
@@ -52,20 +69,16 @@ const _sfc_main = {
               this.canvasInfo.height = this.imgInfo.height / this.dpr;
               console.log("screen width:", common_vendor.index.getSystemInfoSync().screenWidth);
               console.log("canvasInfo", this.canvasInfo);
-              this.drawImage();
+              this.drawImage(true, this.cursorInfo.x, this.cursorInfo.y, this.cursorInfo.radius);
             }
           });
         }
       });
     },
-    getImageRGB(event) {
-      const x = Math.round(event.detail.x);
-      const y = Math.round(event.detail.y);
-      const radius = 10;
-      this.cursorInfo.x = x;
-      this.cursorInfo.y = y;
-      this.cursorInfo.radius = radius;
-      console.log("点击x,y:", x, y);
+    getImageRGB() {
+      const x = Math.round(this.cursorInfo.x);
+      const y = Math.round(this.cursorInfo.y);
+      this.cursorInfo.radius;
       const pixelIndex = (y * this.canvasInfo.width + x) * 4;
       const red = this.imgInfo.data[pixelIndex];
       const green = this.imgInfo.data[pixelIndex + 1];
@@ -73,7 +86,6 @@ const _sfc_main = {
       console.log(red, green, blue);
       this.hexColor = this.rgbToHex(red, green, blue);
       this.rgb = `RGB: ${red}, ${green}, ${blue}  Hex: ${this.hexColor}`;
-      this.drawCursor(x, y, radius);
     },
     rgbToHex(red, green, blue) {
       const toHex = (value) => {
@@ -95,7 +107,6 @@ const _sfc_main = {
         if (canvas) {
           this.ctx = canvas.getContext("2d");
           console.log("canvas:", canvas);
-          console.log("ctx:", this.ctx);
           canvas.width = this.canvasInfo.width;
           canvas.height = this.canvasInfo.height;
           const img = canvas.createImage();
@@ -107,6 +118,7 @@ const _sfc_main = {
             this.imgInfo.data = imageData.data;
             if (plotcursor) {
               this.drawCursor(x, y, radius);
+              console.log("plotcursor");
             }
           };
           console.log("imgInfo:", this.imgInfo);
@@ -117,47 +129,81 @@ const _sfc_main = {
       });
     },
     drawCursor(x, y, radius) {
+      this.cursorInfo.x = x;
+      this.cursorInfo.y = y;
       this.ctx.beginPath();
       this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
       console.log("cursor x,y:", x, y);
       this.ctx.strokeStyle = this.cursorInfo.color;
       this.ctx.stroke();
-      console.log(this.canvasInfo);
+      console.log("cursorInfo:", this.cursorInfo);
     },
     setCursorColor(color) {
       this.cursorInfo.color = color;
       this.drawImage(true, this.cursorInfo.x, this.cursorInfo.y, this.cursorInfo.radius);
+    },
+    handleTouchStart(event) {
+      console.log("event", event);
+      const touch = event.touches[0];
+      this.touchInfo.x = Math.round(touch.x);
+      this.touchInfo.y = Math.round(touch.y);
+      console.log("start x,y:", this.touchInfo.x, this.touchInfo.y);
+      this.touchInfo.isDragging = true;
+    },
+    handleTouchMove(event) {
+      if (!this.touchInfo.isDragging)
+        return;
+      const touch = event.touches[0];
+      const deltaX = touch.x - this.touchInfo.x;
+      const deltaY = touch.y - this.touchInfo.y;
+      console.log("deltaX:", deltaX);
+      console.log("deltaY:", deltaY);
+      this.cursorInfo.x += deltaX;
+      this.cursorInfo.y += deltaY;
+      this.touchInfo.x = touch.x;
+      this.touchInfo.y = touch.y;
+      console.log("move x,y:", this.cursorInfo.x, this.cursorInfo.y);
+      this.getImageRGB();
+    },
+    handleTouchEnd() {
+      this.touchInfo.isDragging = false;
+      this.drawCursor(this.touchInfo.x, this.touchInfo.y, this.cursorInfo.radius);
     }
   }
 };
 function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   return common_vendor.e({
-    a: common_vendor.o((...args) => $options.getImageRGB && $options.getImageRGB(...args)),
-    b: $data.canvasInfo.width + "px",
-    c: $data.canvasInfo.height + "px",
-    d: $data.imgInfo.url
+    a: $data.imgInfo.url
   }, $data.imgInfo.url ? {
-    e: common_vendor.o(($event) => $options.setCursorColor("red")),
-    f: $data.cursorInfo.color === "red" ? "3px solid black" : "1px solid black",
-    g: $data.cursorInfo.color === "red" ? "white" : "grey",
-    h: common_vendor.o(($event) => $options.setCursorColor("black")),
-    i: $data.cursorInfo.color === "black" ? "3px solid black" : "1px solid black",
-    j: $data.cursorInfo.color === "black" ? "white" : "grey",
-    k: common_vendor.o(($event) => $options.setCursorColor("white")),
-    l: $data.cursorInfo.color === "white" ? "3px solid black" : "1px solid black"
+    b: common_vendor.o((...args) => $options.handleTouchStart && $options.handleTouchStart(...args)),
+    c: common_vendor.o((...args) => $options.handleTouchMove && $options.handleTouchMove(...args)),
+    d: common_vendor.o((...args) => $options.handleTouchEnd && $options.handleTouchEnd(...args)),
+    e: $data.canvasInfo.width + "px",
+    f: $data.canvasInfo.height + "px"
   } : {}, {
-    m: $data.imgInfo.url
+    g: $data.imgInfo.url
   }, $data.imgInfo.url ? {
-    n: $data.squareSize + "px",
-    o: $data.squareSize + "px",
-    p: $data.hexColor,
-    q: common_vendor.t($data.rgb)
+    h: common_vendor.o(($event) => $options.setCursorColor("red")),
+    i: $data.cursorInfo.color === "red" ? "3px solid black" : "1px solid black",
+    j: $data.cursorInfo.color === "red" ? "white" : "grey",
+    k: common_vendor.o(($event) => $options.setCursorColor("black")),
+    l: $data.cursorInfo.color === "black" ? "3px solid black" : "1px solid black",
+    m: $data.cursorInfo.color === "black" ? "white" : "grey",
+    n: common_vendor.o(($event) => $options.setCursorColor("white")),
+    o: $data.cursorInfo.color === "white" ? "3px solid black" : "1px solid black"
   } : {}, {
-    r: common_vendor.o((...args) => $options.addImage && $options.addImage(...args)),
-    s: $data.imgInfo.url
+    p: $data.imgInfo.url
   }, $data.imgInfo.url ? {
-    t: common_vendor.o((...args) => $options.deleteImage && $options.deleteImage(...args))
+    q: $data.squareSize + "px",
+    r: $data.squareSize + "px",
+    s: $data.hexColor,
+    t: common_vendor.t($data.rgb)
+  } : {}, {
+    v: common_vendor.o((...args) => $options.addImage && $options.addImage(...args)),
+    w: $data.imgInfo.url
+  }, $data.imgInfo.url ? {
+    x: common_vendor.o((...args) => $options.deleteImage && $options.deleteImage(...args))
   } : {});
 }
-const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "C:/Users/zxing/Desktop/pickercolor/pages/index/index.vue"]]);
+const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "/Users/xingzheng/Desktop/pickercolor/pages/index/index.vue"]]);
 wx.createPage(MiniProgramPage);

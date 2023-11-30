@@ -2,9 +2,11 @@
 	<view>
 		<view>
 			<!-- <image v-if="imgInfo.url" class="image-item" :src="imgInfo.url" mode="aspectFit" @tap="goToDetail" /> -->
-			<!-- <canvas type="2d" id="myCanvas" canvas-id="myCanvas" @tap="getImageRGB" style="{ width: '400rpx', height: '600rpx' }"></canvas> -->
-			<canvas type="2d" id="myCanvas" canvas-id="myCanvas" @tap="getImageRGB"
+			<canvas v-if="imgInfo.url" type="2d" id="myCanvas" canvas-id="myCanvas" @touchstart="handleTouchStart"
+				@touchmove="handleTouchMove" @touchend="handleTouchEnd"
 				:style="{ width: canvasInfo.width + 'px', height: canvasInfo.height + 'px' }"></canvas>
+			<!-- <canvas v-if="imgInfo.url" type="2d" id="myCanvas" canvas-id="myCanvas" @tap="getImageRGB"
+				:style="{ width: canvasInfo.width + 'px', height: canvasInfo.height + 'px' }"></canvas> -->
 		</view>
 		<view v-if="imgInfo.url" style="display: flex; flex-direction: row;">
 			<text>Cursor Select</text>
@@ -15,50 +17,16 @@
 			<button @tap="setCursorColor('white')"
 				:style="{ color: 'white', 'border': cursorInfo.color === 'white' ? '3px solid black' : '1px solid black', 'background-color': 'grey' }">十</button>
 		</view>
-		<view v-if="imgInfo.url">
+		<view v-if="imgInfo.url" class="pickerview" style="display: flex; flex-direction: row;">
 			<view :style="{ width: squareSize + 'px', height: squareSize + 'px', backgroundColor: hexColor }"></view>
-			<text>{{ rgb }}</text>
+			<text class="picker-text"> {{ rgb }}</text>
 		</view>
 		<view style="display: flex; flex-direction: row;">
 			<button @tap="addImage">Add Image</button>
 			<button v-if="imgInfo.url" @tap="deleteImage">Delete</button>
 		</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
-		<view>1</view>
+		<view>1
+		</view>
 	</view>
 </template>
 
@@ -80,10 +48,15 @@ export default {
 				height: 0,
 			},
 			cursorInfo: {
+				x: 100,
+				y: 100,
+				radius: 10,
+				color: "red",
+			},
+			touchInfo: {
 				x: 0,
 				y: 0,
-				radius: 0,
-				color: "red",
+				isDragging: false
 			},
 			ctx: null,
 			drp: 0,
@@ -93,6 +66,18 @@ export default {
 		};
 	},
 	methods: {
+		tap: function (e) {
+			this.x = this.old.x
+			this.y = this.old.y
+			this.$nextTick(function () {
+				this.x = 30
+				this.y = 30
+			})
+		},
+		onChange: function (e) {
+			this.old.x = e.detail.x
+			this.old.y = e.detail.y
+		},
 		deleteImage() {
 			this.imgInfo.url = "";
 		},
@@ -118,22 +103,18 @@ export default {
 							//打印屏幕真实宽度
 							console.log("screen width:", uni.getSystemInfoSync().screenWidth);
 							console.log("canvasInfo", this.canvasInfo);
-							this.drawImage()
+							this.drawImage(true, this.cursorInfo.x, this.cursorInfo.y, this.cursorInfo.radius);
 						},
 					});
 				},
 			});
 		},
-		getImageRGB(event) {
+
+		getImageRGB() {
 			//点击的x，y 取整
-			const x = Math.round(event.detail.x);
-			const y = Math.round(event.detail.y);
-			const radius = 10;
-			this.cursorInfo.x = x;
-			this.cursorInfo.y = y;
-			this.cursorInfo.radius = radius;
-			console.log("点击x,y:", x, y);
-			// this.rgb = "x:" + x + "   y:" + y;
+			const x = Math.round(this.cursorInfo.x);
+			const y = Math.round(this.cursorInfo.y);
+			const radius = this.cursorInfo.radius;
 			const pixelIndex = (y * this.canvasInfo.width + x) * 4;
 			const red = this.imgInfo.data[pixelIndex];
 			const green = this.imgInfo.data[pixelIndex + 1];
@@ -141,7 +122,7 @@ export default {
 			console.log(red, green, blue);
 			this.hexColor = this.rgbToHex(red, green, blue);
 			this.rgb = `RGB: ${red}, ${green}, ${blue}  Hex: ${this.hexColor}`;
-			this.drawCursor(x, y, radius);
+			// this.drawCursor(true, x, y, radius);
 		},
 
 		rgbToHex(red, green, blue) {
@@ -171,7 +152,6 @@ export default {
 					if (canvas) {
 						this.ctx = canvas.getContext("2d");
 						console.log("canvas:", canvas);
-						console.log("ctx:", this.ctx);
 						canvas.width = this.canvasInfo.width
 						canvas.height = this.canvasInfo.height
 						const img = canvas.createImage();
@@ -188,6 +168,7 @@ export default {
 
 							if (plotcursor) {
 								this.drawCursor(x, y, radius);
+								console.log("plotcursor");
 							}
 						};
 						console.log("imgInfo:", this.imgInfo);
@@ -203,20 +184,76 @@ export default {
 
 		drawCursor(x, y, radius) {
 			// Clear the canvas before drawing the new cursor
-
+			this.cursorInfo.x = x;
+			this.cursorInfo.y = y;
 			this.ctx.beginPath();
 			this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
 			console.log("cursor x,y:", x, y);
 			this.ctx.strokeStyle = this.cursorInfo.color;
 			this.ctx.stroke();
-			console.log(this.canvasInfo);
+			console.log("cursorInfo:", this.cursorInfo);
 		},
 
 		setCursorColor(color) {
 			this.cursorInfo.color = color;
 			this.drawImage(true, this.cursorInfo.x, this.cursorInfo.y, this.cursorInfo.radius);
 		},
+
+		handleTouchStart(event) {
+			// Handle touch start event
+			console.log("event", event);
+			const touch = event.touches[0];
+			this.touchInfo.x = Math.round(touch.x);
+			this.touchInfo.y = Math.round(touch.y);
+			console.log("start x,y:", this.touchInfo.x, this.touchInfo.y);
+			this.touchInfo.isDragging = true;
+		},
+
+		handleTouchMove(event) {
+			// Handle touch move event
+			if (!this.touchInfo.isDragging) return;
+
+			const touch = event.touches[0];
+			const deltaX = touch.x - this.touchInfo.x;
+			const deltaY = touch.y - this.touchInfo.y;
+			console.log("deltaX:", deltaX);
+			console.log("deltaY:", deltaY);
+			// Update cursor position
+			this.cursorInfo.x += deltaX;
+			this.cursorInfo.y += deltaY;
+
+			// Update start position for the next move event
+			this.touchInfo.x = touch.x;
+			this.touchInfo.y = touch.y;
+			console.log("move x,y:", this.cursorInfo.x, this.cursorInfo.y);
+			this.getImageRGB();
+		},
+
+		handleTouchEnd() {
+			// Handle touch end event
+			this.touchInfo.isDragging = false;
+			this.drawCursor(this.touchInfo.x, this.touchInfo.y, this.cursorInfo.radius);
+
+		},
 	},
 }
 </script>
-<style></style>
+<style>
+.pickerview {
+	/* 居中 */
+	display: flex;
+	/* justify-content: center;
+	text-align: center; */
+
+	/* 其他样式，根据需要设置 */
+}
+
+.picker-text {
+	/* 垂直居中 */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	/* 可以根据需要设置其他样式 */
+}
+</style>

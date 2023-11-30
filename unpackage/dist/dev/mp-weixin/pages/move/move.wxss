@@ -1,0 +1,17 @@
+
+.custom-movable-area {
+    width: 200px;
+    /* 设置 movable-area 的宽度 */
+    height: 200px;
+    /* 设置 movable-area 的高度 */
+    background-color: #f0f0f0;
+    /* 设置 movable-area 的背景颜色 */
+}
+.max {
+    width: 100px;
+    height: 100px;
+    background-color: lightblue;
+    text-align: center;
+    line-height: 100px;
+    color: white;
+}

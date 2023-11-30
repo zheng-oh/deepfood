@@ -1,0 +1,17 @@
+
+.pickerview {
+	/* 居中 */
+	display: flex;
+	/* justify-content: center;
+	text-align: center; */
+
+	/* 其他样式，根据需要设置 */
+}
+.picker-text {
+	/* 垂直居中 */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	/* 可以根据需要设置其他样式 */
+}
