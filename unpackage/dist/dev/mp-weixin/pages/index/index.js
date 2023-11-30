@@ -8,7 +8,8 @@ const _sfc_main = {
         width: 0,
         height: 0,
         url: "",
-        data: []
+        data: [],
+        scale: 1
       },
       canvasInfo: {
         width: 0,
@@ -46,6 +47,11 @@ const _sfc_main = {
               this.imgInfo.url = res2.path;
               this.imgInfo.width = res2.width;
               this.imgInfo.height = res2.height;
+              this.dpr = this.imgInfo.width / common_vendor.index.getSystemInfoSync().screenWidth;
+              this.canvasInfo.width = this.imgInfo.width / this.dpr;
+              this.canvasInfo.height = this.imgInfo.height / this.dpr;
+              console.log("screen width:", common_vendor.index.getSystemInfoSync().screenWidth);
+              console.log("canvasInfo", this.canvasInfo);
               this.drawImage();
             }
           });
@@ -60,7 +66,6 @@ const _sfc_main = {
       this.cursorInfo.y = y;
       this.cursorInfo.radius = radius;
       console.log("点击x,y:", x, y);
-      console.log(this.imgInfo);
       const pixelIndex = (y * this.canvasInfo.width + x) * 4;
       const red = this.imgInfo.data[pixelIndex];
       const green = this.imgInfo.data[pixelIndex + 1];
@@ -82,30 +87,29 @@ const _sfc_main = {
     },
     drawImage(plotcursor = false, x, y, radius) {
       console.log("start draw");
-      common_vendor.index.getSystemInfoSync().windowWidth;
-      this.dpr = common_vendor.index.getSystemInfoSync().pixelRatio;
-      console.log("dpr:", this.dpr);
-      this.canvasInfo.width = this.imgInfo.width;
-      this.canvasInfo.height = this.imgInfo.height;
-      console.log("canvas_wh:", this.canvasInfo.width, this.canvasInfo.height);
       const query = common_vendor.index.createSelectorQuery();
       query.select("#myCanvas").fields({ node: true, size: true }).exec((res) => {
         const canvas = res[0].node;
+        console.log("res:", res);
+        console.log("<canvas> size:", res[0].width, res[0].height);
         if (canvas) {
           this.ctx = canvas.getContext("2d");
+          console.log("canvas:", canvas);
+          console.log("ctx:", this.ctx);
           canvas.width = this.canvasInfo.width;
           canvas.height = this.canvasInfo.height;
-          console.log("canvas:", canvas);
           const img = canvas.createImage();
           img.src = this.imgInfo.url;
           img.onload = () => {
-            this.ctx.drawImage(img, 0, 0, this.canvasInfo.width, this.canvasInfo.height);
+            this.imgInfo.scale = Math.min(canvas.width / this.imgInfo.width, canvas.height / this.imgInfo.height);
+            this.ctx.drawImage(img, 0, 0, Math.round(this.imgInfo.width * this.imgInfo.scale), Math.round(this.imgInfo.height * this.imgInfo.scale));
             const imageData = this.ctx.getImageData(0, 0, this.canvasInfo.width, this.canvasInfo.height);
             this.imgInfo.data = imageData.data;
             if (plotcursor) {
               this.drawCursor(x, y, radius);
             }
           };
+          console.log("imgInfo:", this.imgInfo);
           console.log("end draw");
         } else {
           console.error("Canvas element not found.");
@@ -119,35 +123,41 @@ const _sfc_main = {
       this.ctx.strokeStyle = this.cursorInfo.color;
       this.ctx.stroke();
       console.log(this.canvasInfo);
+    },
+    setCursorColor(color) {
+      this.cursorInfo.color = color;
+      this.drawImage(true, this.cursorInfo.x, this.cursorInfo.y, this.cursorInfo.radius);
     }
   }
 };
 function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   return common_vendor.e({
     a: common_vendor.o((...args) => $options.getImageRGB && $options.getImageRGB(...args)),
-    b: $data.imgInfo.url
+    b: $data.canvasInfo.width + "px",
+    c: $data.canvasInfo.height + "px",
+    d: $data.imgInfo.url
   }, $data.imgInfo.url ? {
-    c: common_vendor.o(($event) => _ctx.setCursorColor("red")),
-    d: $data.cursorInfo.color === "red" ? "3px solid black" : "1px solid black",
-    e: $data.cursorInfo.color === "red" ? "white" : "grey",
-    f: common_vendor.o(($event) => _ctx.setCursorColor("black")),
-    g: $data.cursorInfo.color === "black" ? "3px solid black" : "1px solid black",
-    h: $data.cursorInfo.color === "black" ? "white" : "grey",
-    i: common_vendor.o(($event) => _ctx.setCursorColor("white")),
-    j: $data.cursorInfo.color === "white" ? "3px solid black" : "1px solid black"
+    e: common_vendor.o(($event) => $options.setCursorColor("red")),
+    f: $data.cursorInfo.color === "red" ? "3px solid black" : "1px solid black",
+    g: $data.cursorInfo.color === "red" ? "white" : "grey",
+    h: common_vendor.o(($event) => $options.setCursorColor("black")),
+    i: $data.cursorInfo.color === "black" ? "3px solid black" : "1px solid black",
+    j: $data.cursorInfo.color === "black" ? "white" : "grey",
+    k: common_vendor.o(($event) => $options.setCursorColor("white")),
+    l: $data.cursorInfo.color === "white" ? "3px solid black" : "1px solid black"
   } : {}, {
-    k: $data.imgInfo.url
+    m: $data.imgInfo.url
   }, $data.imgInfo.url ? {
-    l: $data.squareSize + "px",
-    m: $data.squareSize + "px",
-    n: $data.hexColor,
-    o: common_vendor.t($data.rgb)
+    n: $data.squareSize + "px",
+    o: $data.squareSize + "px",
+    p: $data.hexColor,
+    q: common_vendor.t($data.rgb)
   } : {}, {
-    p: common_vendor.o((...args) => $options.addImage && $options.addImage(...args)),
-    q: $data.imgInfo.url
+    r: common_vendor.o((...args) => $options.addImage && $options.addImage(...args)),
+    s: $data.imgInfo.url
   }, $data.imgInfo.url ? {
-    r: common_vendor.o((...args) => $options.deleteImage && $options.deleteImage(...args))
+    t: common_vendor.o((...args) => $options.deleteImage && $options.deleteImage(...args))
   } : {});
 }
-const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "/Users/xingzheng/Desktop/pickercolor/pages/index/index.vue"]]);
+const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "C:/Users/zxing/Desktop/pickercolor/pages/index/index.vue"]]);
 wx.createPage(MiniProgramPage);
