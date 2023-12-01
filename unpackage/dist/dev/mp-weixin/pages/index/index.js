@@ -9,11 +9,14 @@ const _sfc_main = {
         height: 0,
         url: "",
         data: [],
-        scale: 1
+        scale: 1,
+        ratio: 1
       },
       canvasInfo: {
-        width: 430,
-        height: 430
+        tagwidth: 750,
+        tagheight: 750,
+        width: 0,
+        height: 0
       },
       cursorInfo: {
         x: 100,
@@ -52,14 +55,29 @@ const _sfc_main = {
               this.imgInfo.url = res2.path;
               this.imgInfo.width = res2.width;
               this.imgInfo.height = res2.height;
-              this.dpr = this.imgInfo.width / common_vendor.index.getSystemInfoSync().screenWidth;
-              this.canvasInfo.width = this.imgInfo.width / this.dpr;
-              this.canvasInfo.height = this.imgInfo.height / this.dpr;
+              this.setCanvas();
+              this.canvasInfo.tagheight = Math.round(this.canvasInfo.tagwidth / this.imgInfo.ratio);
+              console.log("系统真实dpr:", common_vendor.index.getSystemInfoSync().pixelRatio);
+              console.log("系统真实宽度：", common_vendor.index.getSystemInfoSync().screenWidth);
+              console.log("canvasInfo", this.canvasInfo);
               this.drawImage();
             }
           });
         }
       });
+    },
+    setCanvas() {
+      this.imgInfo.ratio = this.imgInfo.width / this.imgInfo.height;
+      const canvasRatio = this.canvasInfo.tagwidth / this.canvasInfo.tagheight;
+      if (this.imgInfo.ratio > canvasRatio) {
+        console.log("照片宽对齐屏幕");
+        this.canvasInfo.width = common_vendor.index.getSystemInfoSync().screenWidth;
+        this.canvasInfo.height = Math.round(this.canvasInfo.width / this.imgInfo.ratio);
+      } else {
+        console.log("照片高对齐屏幕");
+        this.canvasInfo.height = this.canvasInfo.tagheight;
+        this.canvasInfo.width = Math.round(this.canvasInfo.height * this.imgInfo.ratio);
+      }
     },
     getImageRGB() {
       const x = Math.round(this.cursorInfo.x);
@@ -97,17 +115,7 @@ const _sfc_main = {
           const img = canvas.createImage();
           img.src = this.imgInfo.url;
           img.onload = () => {
-            this.imgInfo.scale = Math.min(
-              canvas.width / this.imgInfo.width,
-              canvas.height / this.imgInfo.height
-            );
-            this.ctx.drawImage(
-              img,
-              0,
-              0,
-              Math.round(this.imgInfo.width * this.imgInfo.scale),
-              Math.round(this.imgInfo.height * this.imgInfo.scale)
-            );
+            this.ctx.drawImage(img, 0, 0, this.canvasInfo.width, this.canvasInfo.height);
             const imageData = this.ctx.getImageData(
               0,
               0,
@@ -115,6 +123,7 @@ const _sfc_main = {
               this.canvasInfo.height
             );
             this.imgInfo.data = imageData.data;
+            console.log("imageData:", imageData);
           };
         } else {
           console.error("Canvas element not found.");
@@ -174,8 +183,8 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     b: common_vendor.o((...args) => $options.handleTouchStart && $options.handleTouchStart(...args)),
     c: common_vendor.o((...args) => $options.handleTouchMove && $options.handleTouchMove(...args)),
     d: common_vendor.o((...args) => $options.handleTouchEnd && $options.handleTouchEnd(...args)),
-    e: $data.canvasInfo.width + "px",
-    f: $data.canvasInfo.height + "px"
+    e: $data.canvasInfo.tagwidth + "rpx",
+    f: $data.canvasInfo.tagheight + "rpx"
   } : {}, {
     g: $data.imgInfo.url
   }, $data.imgInfo.url ? {
@@ -201,5 +210,5 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     x: common_vendor.o((...args) => $options.deleteImage && $options.deleteImage(...args))
   } : {});
 }
-const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "C:/Users/zxing/Desktop/pickercolor/pages/index/index.vue"]]);
+const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "/Users/xingzheng/Desktop/pickercolor/pages/index/index.vue"]]);
 wx.createPage(MiniProgramPage);

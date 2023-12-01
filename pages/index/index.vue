@@ -3,12 +3,9 @@
 		<view>
 			<!-- <image v-if="imgInfo.url" class="image-item" :src="imgInfo.url" mode="aspectFit" @tap="goToDetail" /> -->
 			<canvas v-if="imgInfo.url" type="2d" id="myCanvas" canvas-id="myCanvas" @touchstart="handleTouchStart"
-				@touchmove="handleTouchMove" @touchend="handleTouchEnd" :style="{
-					width: canvasInfo.width + 'px',
-					height: canvasInfo.height + 'px',
-				}"></canvas>
-			<!-- <canvas v-if="imgInfo.url" type="2d" id="myCanvas" canvas-id="myCanvas" @tap="getImageRGB"
-				:style="{ width: canvasInfo.width + 'px', height: canvasInfo.height + 'px' }"></canvas> -->
+				@touchmove="handleTouchMove" @touchend="handleTouchEnd"
+				:style="{ width: canvasInfo.tagwidth + 'rpx', height: canvasInfo.tagheight + 'rpx' }"></canvas>
+
 		</view>
 		<view v-if="imgInfo.url" style="display: flex; flex-direction: row">
 			<text>Cursor Select</text>
@@ -53,7 +50,6 @@
 			<button @tap="addImage">Add Image</button>
 			<button v-if="imgInfo.url" @tap="deleteImage">Delete</button>
 		</view>
-		<view>3 </view>
 	</view>
 </template>
 
@@ -69,10 +65,13 @@ export default {
 				url: "",
 				data: [],
 				scale: 1,
+				ratio: 1,
 			},
 			canvasInfo: {
-				width: 430,
-				height: 430,
+				tagwidth: 750,
+				tagheight: 750,
+				width: 0,
+				height: 0,
 			},
 			cursorInfo: {
 				x: 100,
@@ -107,18 +106,21 @@ export default {
 					uni.getImageInfo({
 						src: tempFilePaths[0],
 						success: (res) => {
+							// console.log("img res", res);
 							this.imgInfo.url = res.path;
 							this.imgInfo.width = res.width;
 							this.imgInfo.height = res.height;
+							this.setCanvas()
+							this.canvasInfo.tagheight = Math.round(this.canvasInfo.tagwidth / this.imgInfo.ratio);
 							//屏幕缩放比例
-							// const dpr = uni.getSystemInfoSync().pixelRatio;
-							this.dpr =
-								this.imgInfo.width / uni.getSystemInfoSync().screenWidth;
-							this.canvasInfo.width = this.imgInfo.width / this.dpr;
-							this.canvasInfo.height = this.imgInfo.height / this.dpr;
+							console.log("系统真实dpr:", uni.getSystemInfoSync().pixelRatio);
+							console.log("系统真实宽度：", uni.getSystemInfoSync().screenWidth)
+							// this.dpr =
+							// 	this.imgInfo.width / uni.getSystemInfoSync().screenWidth;
+							// console.log("dpr:", this.dpr);
 							//打印屏幕真实宽度
 							// console.log("screen width:", uni.getSystemInfoSync().screenWidth);
-							// console.log("canvasInfo", this.canvasInfo);
+							console.log("canvasInfo", this.canvasInfo);
 							this.drawImage(
 							);
 						},
@@ -126,6 +128,22 @@ export default {
 				},
 			});
 		},
+		setCanvas() {
+			this.imgInfo.ratio = this.imgInfo.width / this.imgInfo.height;
+			const canvasRatio = this.canvasInfo.tagwidth / this.canvasInfo.tagheight;
+			if (this.imgInfo.ratio > canvasRatio) {
+				console.log("照片宽对齐屏幕");
+				this.canvasInfo.width = uni.getSystemInfoSync().screenWidth;
+				this.canvasInfo.height = Math.round(this.canvasInfo.width / this.imgInfo.ratio);
+				// this.canvasInfo.height = this.canvasInfo.width / imgRatio;
+			} else {
+				console.log("照片高对齐屏幕");
+				this.canvasInfo.height = this.canvasInfo.tagheight;
+				this.canvasInfo.width = Math.round(this.canvasInfo.height * this.imgInfo.ratio);
+			}
+
+		},
+
 		getImageRGB() {
 			//点击的x，y 取整
 			const x = Math.round(this.cursorInfo.x);
@@ -174,19 +192,7 @@ export default {
 						img.src = this.imgInfo.url;
 
 						img.onload = () => {
-							this.imgInfo.scale = Math.min(
-								canvas.width / this.imgInfo.width,
-								canvas.height / this.imgInfo.height
-							);
-
-							this.ctx.drawImage(
-								img,
-								0,
-								0,
-								Math.round(this.imgInfo.width * this.imgInfo.scale),
-								Math.round(this.imgInfo.height * this.imgInfo.scale)
-							);
-							// this.ctx.drawImage(img, 0, 0, this.canvasInfo.width,  this.canvasInfo.height, this.imgInfo.height);
+							this.ctx.drawImage(img, 0, 0, this.canvasInfo.width, this.canvasInfo.height);
 
 							const imageData = this.ctx.getImageData(
 								0,
@@ -195,8 +201,8 @@ export default {
 								this.canvasInfo.height
 							);
 							this.imgInfo.data = imageData.data;
+							console.log("imageData:", imageData);
 						};
-						// console.log("imgInfo:", this.imgInfo);
 					} else {
 						console.error("Canvas element not found.");
 					}

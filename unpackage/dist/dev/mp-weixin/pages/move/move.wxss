@@ -1,17 +1,17 @@
 
-.custom-movable-area {
-    width: 200px;
-    /* 设置 movable-area 的宽度 */
-    height: 200px;
-    /* 设置 movable-area 的高度 */
-    background-color: #f0f0f0;
-    /* 设置 movable-area 的背景颜色 */
+.pickerview {
+	/* 居中 */
+	display: flex;
+	/* justify-content: center;
+	text-align: center; */
+
+	/* 其他样式，根据需要设置 */
 }
-.max {
-    width: 100px;
-    height: 100px;
-    background-color: lightblue;
-    text-align: center;
-    line-height: 100px;
-    color: white;
+.picker-text {
+	/* 垂直居中 */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	/* 可以根据需要设置其他样式 */
 }
