@@ -8,7 +8,7 @@
 
 		</view>
 		<view v-if="imgInfo.url" style="display: flex; flex-direction: row">
-			<text>Cursor Select</text>
+			<text class="large-text">Cursor Select</text>
 			<button @tap="setCursorColor('red')" :style="{
 				color: 'red',
 				border:
@@ -44,11 +44,12 @@
 				height: squareSize + 'px',
 				backgroundColor: hexColor,
 			}"></view>
-			<text class="picker-text"> {{ rgb }}</text>
+			<text class="large-text"> {{ rgb }}</text>
 		</view>
 		<view style="display: flex; flex-direction: row">
-			<button @tap="addImage">Add Image</button>
-			<button v-if="imgInfo.url" @tap="deleteImage">Delete</button>
+
+			<button type="primary" @tap="addImage">Add Image</button>
+			<button v-if="imgInfo.url" type="warn" @tap="deleteImage">Delete</button>
 		</view>
 	</view>
 </template>
@@ -285,12 +286,11 @@ export default {
 	/* 其他样式，根据需要设置 */
 }
 
-.picker-text {
-	/* 垂直居中 */
+.large-text {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	text-align: center;
-	/* 可以根据需要设置其他样式 */
+	font-size: 40rpx;
 }
 </style>
