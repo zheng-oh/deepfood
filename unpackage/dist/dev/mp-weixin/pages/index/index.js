@@ -12,8 +12,8 @@ const _sfc_main = {
         scale: 1
       },
       canvasInfo: {
-        width: 0,
-        height: 0
+        width: 430,
+        height: 430
       },
       cursorInfo: {
         x: 100,
@@ -35,18 +35,6 @@ const _sfc_main = {
     };
   },
   methods: {
-    tap: function(e) {
-      this.x = this.old.x;
-      this.y = this.old.y;
-      this.$nextTick(function() {
-        this.x = 30;
-        this.y = 30;
-      });
-    },
-    onChange: function(e) {
-      this.old.x = e.detail.x;
-      this.old.y = e.detail.y;
-    },
     deleteImage() {
       this.imgInfo.url = "";
     },
@@ -67,9 +55,7 @@ const _sfc_main = {
               this.dpr = this.imgInfo.width / common_vendor.index.getSystemInfoSync().screenWidth;
               this.canvasInfo.width = this.imgInfo.width / this.dpr;
               this.canvasInfo.height = this.imgInfo.height / this.dpr;
-              console.log("screen width:", common_vendor.index.getSystemInfoSync().screenWidth);
-              console.log("canvasInfo", this.canvasInfo);
-              this.drawImage(true, this.cursorInfo.x, this.cursorInfo.y, this.cursorInfo.radius);
+              this.drawImage();
             }
           });
         }
@@ -83,7 +69,6 @@ const _sfc_main = {
       const red = this.imgInfo.data[pixelIndex];
       const green = this.imgInfo.data[pixelIndex + 1];
       const blue = this.imgInfo.data[pixelIndex + 2];
-      console.log(red, green, blue);
       this.hexColor = this.rgbToHex(red, green, blue);
       this.rgb = `RGB: ${red}, ${green}, ${blue}  Hex: ${this.hexColor}`;
     },
@@ -97,7 +82,7 @@ const _sfc_main = {
       const hexBlue = toHex(blue);
       return `#${hexRed}${hexGreen}${hexBlue}`;
     },
-    drawImage(plotcursor = false, x, y, radius) {
+    drawImage() {
       console.log("start draw");
       const query = common_vendor.index.createSelectorQuery();
       query.select("#myCanvas").fields({ node: true, size: true }).exec((res) => {
@@ -112,43 +97,57 @@ const _sfc_main = {
           const img = canvas.createImage();
           img.src = this.imgInfo.url;
           img.onload = () => {
-            this.imgInfo.scale = Math.min(canvas.width / this.imgInfo.width, canvas.height / this.imgInfo.height);
-            this.ctx.drawImage(img, 0, 0, Math.round(this.imgInfo.width * this.imgInfo.scale), Math.round(this.imgInfo.height * this.imgInfo.scale));
-            const imageData = this.ctx.getImageData(0, 0, this.canvasInfo.width, this.canvasInfo.height);
+            this.imgInfo.scale = Math.min(
+              canvas.width / this.imgInfo.width,
+              canvas.height / this.imgInfo.height
+            );
+            this.ctx.drawImage(
+              img,
+              0,
+              0,
+              Math.round(this.imgInfo.width * this.imgInfo.scale),
+              Math.round(this.imgInfo.height * this.imgInfo.scale)
+            );
+            const imageData = this.ctx.getImageData(
+              0,
+              0,
+              this.canvasInfo.width,
+              this.canvasInfo.height
+            );
             this.imgInfo.data = imageData.data;
-            if (plotcursor) {
-              this.drawCursor(x, y, radius);
-              console.log("plotcursor");
-            }
           };
-          console.log("imgInfo:", this.imgInfo);
-          console.log("end draw");
         } else {
           console.error("Canvas element not found.");
         }
       });
     },
-    drawCursor(x, y, radius) {
-      this.cursorInfo.x = x;
-      this.cursorInfo.y = y;
+    drawCursor() {
       this.ctx.beginPath();
-      this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
-      console.log("cursor x,y:", x, y);
+      this.ctx.lineWidth = 2;
+      this.ctx.moveTo(this.cursorInfo.x, this.cursorInfo.y - this.cursorInfo.radius);
+      this.ctx.lineTo(this.cursorInfo.x, this.cursorInfo.y + this.cursorInfo.radius);
+      this.ctx.moveTo(this.cursorInfo.x - this.cursorInfo.radius, this.cursorInfo.y);
+      this.ctx.lineTo(this.cursorInfo.x + this.cursorInfo.radius, this.cursorInfo.y);
       this.ctx.strokeStyle = this.cursorInfo.color;
       this.ctx.stroke();
-      console.log("cursorInfo:", this.cursorInfo);
     },
     setCursorColor(color) {
       this.cursorInfo.color = color;
-      this.drawImage(true, this.cursorInfo.x, this.cursorInfo.y, this.cursorInfo.radius);
+      this.drawImage(
+        true,
+        this.cursorInfo.x,
+        this.cursorInfo.y,
+        this.cursorInfo.radius
+      );
     },
     handleTouchStart(event) {
-      console.log("event", event);
       const touch = event.touches[0];
       this.touchInfo.x = Math.round(touch.x);
       this.touchInfo.y = Math.round(touch.y);
-      console.log("start x,y:", this.touchInfo.x, this.touchInfo.y);
+      this.cursorInfo.x = this.touchInfo.x;
+      this.cursorInfo.y = this.touchInfo.y;
       this.touchInfo.isDragging = true;
+      this.getImageRGB();
     },
     handleTouchMove(event) {
       if (!this.touchInfo.isDragging)
@@ -156,18 +155,15 @@ const _sfc_main = {
       const touch = event.touches[0];
       const deltaX = touch.x - this.touchInfo.x;
       const deltaY = touch.y - this.touchInfo.y;
-      console.log("deltaX:", deltaX);
-      console.log("deltaY:", deltaY);
       this.cursorInfo.x += deltaX;
       this.cursorInfo.y += deltaY;
       this.touchInfo.x = touch.x;
       this.touchInfo.y = touch.y;
-      console.log("move x,y:", this.cursorInfo.x, this.cursorInfo.y);
       this.getImageRGB();
     },
     handleTouchEnd() {
+      this.drawCursor();
       this.touchInfo.isDragging = false;
-      this.drawCursor(this.touchInfo.x, this.touchInfo.y, this.cursorInfo.radius);
     }
   }
 };
@@ -205,5 +201,5 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     x: common_vendor.o((...args) => $options.deleteImage && $options.deleteImage(...args))
   } : {});
 }
-const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "/Users/xingzheng/Desktop/pickercolor/pages/index/index.vue"]]);
+const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "C:/Users/zxing/Desktop/pickercolor/pages/index/index.vue"]]);
 wx.createPage(MiniProgramPage);
