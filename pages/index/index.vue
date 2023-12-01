@@ -1,6 +1,6 @@
 <template>
 	<view>
-		<view>
+		<view style="display: flex; justify-content: center;">
 			<!-- <image v-if="imgInfo.url" class="image-item" :src="imgInfo.url" mode="aspectFit" @tap="goToDetail" /> -->
 			<canvas v-if="imgInfo.url" type="2d" id="myCanvas" canvas-id="myCanvas" @touchstart="handleTouchStart"
 				@touchmove="handleTouchMove" @touchend="handleTouchEnd"
@@ -67,6 +67,7 @@ export default {
 				data: [],
 				scale: 1,
 				ratio: 1,
+				is_kuan: false,
 			},
 			canvasInfo: {
 				tagwidth: 750,
@@ -83,6 +84,8 @@ export default {
 			touchInfo: {
 				x: 0,
 				y: 0,
+				x_ratio: 1,
+				y_ratio: 1,
 				isDragging: false,
 			},
 			ctx: null,
@@ -111,8 +114,8 @@ export default {
 							this.imgInfo.url = res.path;
 							this.imgInfo.width = res.width;
 							this.imgInfo.height = res.height;
+							console.log("imgInfo", this.imgInfo);
 							this.setCanvas()
-							this.canvasInfo.tagheight = Math.round(this.canvasInfo.tagwidth / this.imgInfo.ratio);
 							//屏幕缩放比例
 							console.log("系统真实dpr:", uni.getSystemInfoSync().pixelRatio);
 							console.log("系统真实宽度：", uni.getSystemInfoSync().screenWidth)
@@ -121,7 +124,7 @@ export default {
 							// console.log("dpr:", this.dpr);
 							//打印屏幕真实宽度
 							// console.log("screen width:", uni.getSystemInfoSync().screenWidth);
-							console.log("canvasInfo", this.canvasInfo);
+							// console.log("canvasInfo", this.canvasInfo);
 							this.drawImage(
 							);
 						},
@@ -129,6 +132,7 @@ export default {
 				},
 			});
 		},
+
 		setCanvas() {
 			this.imgInfo.ratio = this.imgInfo.width / this.imgInfo.height;
 			const canvasRatio = this.canvasInfo.tagwidth / this.canvasInfo.tagheight;
@@ -136,24 +140,31 @@ export default {
 				console.log("照片宽对齐屏幕");
 				this.canvasInfo.width = uni.getSystemInfoSync().screenWidth;
 				this.canvasInfo.height = Math.round(this.canvasInfo.width / this.imgInfo.ratio);
-				// this.canvasInfo.height = this.canvasInfo.width / imgRatio;
+				this.canvasInfo.tagheight = Math.round(this.canvasInfo.tagwidth / this.imgInfo.ratio);
+				this.imgInfo.is_kuan = true;
 			} else {
 				console.log("照片高对齐屏幕");
 				this.canvasInfo.height = this.canvasInfo.tagheight;
 				this.canvasInfo.width = Math.round(this.canvasInfo.height * this.imgInfo.ratio);
+				this.canvasInfo.tagwidth = Math.round(this.canvasInfo.tagheight * this.imgInfo.ratio);
+				console.log("canvasInfo", this.canvasInfo);
 			}
 
 		},
 
 		getImageRGB() {
 			//点击的x，y 取整
-			const x = Math.round(this.cursorInfo.x);
-			const y = Math.round(this.cursorInfo.y);
-			const radius = this.cursorInfo.radius;
-			const pixelIndex = (y * this.canvasInfo.width + x) * 4;
-			const red = this.imgInfo.data[pixelIndex];
-			const green = this.imgInfo.data[pixelIndex + 1];
-			const blue = this.imgInfo.data[pixelIndex + 2];
+			console.log("touchInfo:", this.touchInfo);
+			const x = Math.round(this.touchInfo.x * this.touchInfo.x_ratio);
+			const y = Math.round(this.touchInfo.y * this.touchInfo.y_ratio);
+			// console.log('ss:', this.canvasInfo.width, this.imgInfo.width);
+			console.log("x,y:", x, y);
+			console.log("canvasInfo:", this.canvasInfo);
+			const pixelIndex = (y * this.imgInfo.data.width + x) * 4;
+			console.log("pixelIndex:", pixelIndex);
+			const red = this.imgInfo.data.data[pixelIndex];
+			const green = this.imgInfo.data.data[pixelIndex + 1];
+			const blue = this.imgInfo.data.data[pixelIndex + 2];
 			// console.log(red, green, blue);
 			this.hexColor = this.rgbToHex(red, green, blue);
 			this.rgb = `RGB: ${red}, ${green}, ${blue}  Hex: ${this.hexColor}`;
@@ -182,13 +193,14 @@ export default {
 				.fields({ node: true, size: true })
 				.exec((res) => {
 					const canvas = res[0].node; // Add null check here
-					console.log("res:", res);
+					console.log("ress:", res);
 					console.log("<canvas> size:", res[0].width, res[0].height);
 					if (canvas) {
 						this.ctx = canvas.getContext("2d");
-						console.log("canvas:", canvas);
 						canvas.width = this.canvasInfo.width;
 						canvas.height = this.canvasInfo.height;
+						console.log("canvas w;h:", canvas.width, canvas.height);
+
 						const img = canvas.createImage();
 						img.src = this.imgInfo.url;
 
@@ -198,11 +210,15 @@ export default {
 							const imageData = this.ctx.getImageData(
 								0,
 								0,
-								this.canvasInfo.width,
-								this.canvasInfo.height
+								this.canvasInfo.tagwidth,
+								this.canvasInfo.tagheight
 							);
-							this.imgInfo.data = imageData.data;
+							this.imgInfo.data = imageData;
 							console.log("imageData:", imageData);
+							if (!this.imgInfo.is_kuan) {
+								this.touchInfo.y_ratio = this.canvasInfo.tagheight / res[0].height;
+								this.touchInfo.x_ratio = this.canvasInfo.tagwidth / (this.imgInfo.data.height / this.touchInfo.y_ratio);
+							}
 						};
 					} else {
 						console.error("Canvas element not found.");
@@ -214,7 +230,6 @@ export default {
 			// Clear the canvas before drawing the new cursor
 			this.ctx.beginPath();
 			this.ctx.lineWidth = 2; // 可以根据需要调整线的宽度
-
 			this.ctx.moveTo(this.cursorInfo.x, this.cursorInfo.y - this.cursorInfo.radius);
 			this.ctx.lineTo(this.cursorInfo.x, this.cursorInfo.y + this.cursorInfo.radius);
 
@@ -243,6 +258,7 @@ export default {
 			this.touchInfo.y = Math.round(touch.y);
 			this.cursorInfo.x = this.touchInfo.x;
 			this.cursorInfo.y = this.touchInfo.y;
+			console.log("touch start", this.touchInfo.x, this.touchInfo.y);
 			// this.drawCursor(this.touchInfo.x, this.touchInfo.y, this.cursorInfo.radius);
 			// console.log("start x,y:", this.touchInfo.x, this.touchInfo.y);
 			this.touchInfo.isDragging = true;

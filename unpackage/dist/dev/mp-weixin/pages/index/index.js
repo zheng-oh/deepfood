@@ -10,7 +10,8 @@ const _sfc_main = {
         url: "",
         data: [],
         scale: 1,
-        ratio: 1
+        ratio: 1,
+        is_kuan: false
       },
       canvasInfo: {
         tagwidth: 750,
@@ -27,6 +28,8 @@ const _sfc_main = {
       touchInfo: {
         x: 0,
         y: 0,
+        x_ratio: 1,
+        y_ratio: 1,
         isDragging: false
       },
       ctx: null,
@@ -55,11 +58,10 @@ const _sfc_main = {
               this.imgInfo.url = res2.path;
               this.imgInfo.width = res2.width;
               this.imgInfo.height = res2.height;
+              console.log("imgInfo", this.imgInfo);
               this.setCanvas();
-              this.canvasInfo.tagheight = Math.round(this.canvasInfo.tagwidth / this.imgInfo.ratio);
               console.log("系统真实dpr:", common_vendor.index.getSystemInfoSync().pixelRatio);
               console.log("系统真实宽度：", common_vendor.index.getSystemInfoSync().screenWidth);
-              console.log("canvasInfo", this.canvasInfo);
               this.drawImage();
             }
           });
@@ -73,20 +75,27 @@ const _sfc_main = {
         console.log("照片宽对齐屏幕");
         this.canvasInfo.width = common_vendor.index.getSystemInfoSync().screenWidth;
         this.canvasInfo.height = Math.round(this.canvasInfo.width / this.imgInfo.ratio);
+        this.canvasInfo.tagheight = Math.round(this.canvasInfo.tagwidth / this.imgInfo.ratio);
+        this.imgInfo.is_kuan = true;
       } else {
         console.log("照片高对齐屏幕");
         this.canvasInfo.height = this.canvasInfo.tagheight;
         this.canvasInfo.width = Math.round(this.canvasInfo.height * this.imgInfo.ratio);
+        this.canvasInfo.tagwidth = Math.round(this.canvasInfo.tagheight * this.imgInfo.ratio);
+        console.log("canvasInfo", this.canvasInfo);
       }
     },
     getImageRGB() {
-      const x = Math.round(this.cursorInfo.x);
-      const y = Math.round(this.cursorInfo.y);
-      this.cursorInfo.radius;
-      const pixelIndex = (y * this.canvasInfo.width + x) * 4;
-      const red = this.imgInfo.data[pixelIndex];
-      const green = this.imgInfo.data[pixelIndex + 1];
-      const blue = this.imgInfo.data[pixelIndex + 2];
+      console.log("touchInfo:", this.touchInfo);
+      const x = Math.round(this.touchInfo.x * this.touchInfo.x_ratio);
+      const y = Math.round(this.touchInfo.y * this.touchInfo.y_ratio);
+      console.log("x,y:", x, y);
+      console.log("canvasInfo:", this.canvasInfo);
+      const pixelIndex = (y * this.imgInfo.data.width + x) * 4;
+      console.log("pixelIndex:", pixelIndex);
+      const red = this.imgInfo.data.data[pixelIndex];
+      const green = this.imgInfo.data.data[pixelIndex + 1];
+      const blue = this.imgInfo.data.data[pixelIndex + 2];
       this.hexColor = this.rgbToHex(red, green, blue);
       this.rgb = `RGB: ${red}, ${green}, ${blue}  Hex: ${this.hexColor}`;
     },
@@ -105,13 +114,13 @@ const _sfc_main = {
       const query = common_vendor.index.createSelectorQuery();
       query.select("#myCanvas").fields({ node: true, size: true }).exec((res) => {
         const canvas = res[0].node;
-        console.log("res:", res);
+        console.log("ress:", res);
         console.log("<canvas> size:", res[0].width, res[0].height);
         if (canvas) {
           this.ctx = canvas.getContext("2d");
-          console.log("canvas:", canvas);
           canvas.width = this.canvasInfo.width;
           canvas.height = this.canvasInfo.height;
+          console.log("canvas w;h:", canvas.width, canvas.height);
           const img = canvas.createImage();
           img.src = this.imgInfo.url;
           img.onload = () => {
@@ -119,11 +128,15 @@ const _sfc_main = {
             const imageData = this.ctx.getImageData(
               0,
               0,
-              this.canvasInfo.width,
-              this.canvasInfo.height
+              this.canvasInfo.tagwidth,
+              this.canvasInfo.tagheight
             );
-            this.imgInfo.data = imageData.data;
+            this.imgInfo.data = imageData;
             console.log("imageData:", imageData);
+            if (!this.imgInfo.is_kuan) {
+              this.touchInfo.y_ratio = this.canvasInfo.tagheight / res[0].height;
+              this.touchInfo.x_ratio = this.canvasInfo.tagwidth / (this.imgInfo.data.height / this.touchInfo.y_ratio);
+            }
           };
         } else {
           console.error("Canvas element not found.");
@@ -155,6 +168,7 @@ const _sfc_main = {
       this.touchInfo.y = Math.round(touch.y);
       this.cursorInfo.x = this.touchInfo.x;
       this.cursorInfo.y = this.touchInfo.y;
+      console.log("touch start", this.touchInfo.x, this.touchInfo.y);
       this.touchInfo.isDragging = true;
       this.getImageRGB();
     },
@@ -210,5 +224,5 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     x: common_vendor.o((...args) => $options.deleteImage && $options.deleteImage(...args))
   } : {});
 }
-const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "/Users/xingzheng/Desktop/pickercolor/pages/index/index.vue"]]);
+const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "C:/Users/zxing/Desktop/pickercolor/pages/index/index.vue"]]);
 wx.createPage(MiniProgramPage);
