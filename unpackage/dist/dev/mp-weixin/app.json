@@ -1,7 +1,7 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/move/move"
+    "pages/db/db"
   ],
   "window": {
     "navigationBarTextStyle": "black",
@@ -22,8 +22,8 @@
         "selectedIconPath": "static/logo.png"
       },
       {
-        "pagePath": "pages/move/move",
-        "text": "动态",
+        "pagePath": "pages/db/db",
+        "text": "数据库",
         "iconPath": "static/logo.png",
         "selectedIconPath": "static/logo.png"
       }

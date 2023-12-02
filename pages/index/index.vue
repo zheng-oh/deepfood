@@ -45,10 +45,11 @@
 				backgroundColor: hexColor,
 			}"></view>
 			<text class="large-text"> {{ rgb }}</text>
+			<button type="primary" @tap="addToDB">AddToDB</button>
 		</view>
 		<view style="display: flex; flex-direction: row">
 
-			<button type="primary" @tap="addImage">Add Image</button>
+			<button type="primary" @tap="addImage">{{ !imgInfo.url ? "Add Image" : "Alter Image" }}</button>
 			<button v-if="imgInfo.url" type="warn" @tap="deleteImage">Delete</button>
 		</view>
 	</view>
@@ -59,7 +60,14 @@
 export default {
 	data() {
 		return {
-			pickerColor: [],
+			pickerColors: [
+			],
+			pickerColor: {
+				red: 0,
+				green: 0,
+				blue: 0,
+				// hex: "",
+			},
 			imgInfo: {
 				width: 0,
 				height: 0,
@@ -70,6 +78,8 @@ export default {
 				is_kuan: false,
 			},
 			canvasInfo: {
+				tagwidth_source: 750,
+				tagheight_source: 750,
 				tagwidth: 750,
 				tagheight: 750,
 				width: 0,
@@ -96,6 +106,10 @@ export default {
 		};
 	},
 	methods: {
+		sendPickerColors() {
+			// 发送事件到事件总线
+			uni.$emit('pickerColorsEvent', this.pickerColors);
+		},
 		deleteImage() {
 			this.imgInfo.url = "";
 		},
@@ -132,56 +146,36 @@ export default {
 				},
 			});
 		},
-
+		addToDB() {
+			// 将颜色添加到数据库
+			this.pickerColors.push(this.pickerColor);
+			// this.pickerColors.push(this.pickerColor);
+			console.log("发送pickerColors:", this.pickerColors);
+			this.sendPickerColors();
+		},
 		setCanvas() {
+			this.canvasInfo.tagwidth = this.canvasInfo.tagwidth_source;
+			this.canvasInfo.tagheight = this.canvasInfo.tagheight_source;
 			this.imgInfo.ratio = this.imgInfo.width / this.imgInfo.height;
-			const canvasRatio = this.canvasInfo.tagwidth / this.canvasInfo.tagheight;
+			const canvasRatio = this.canvasInfo.tagwidth_source / this.canvasInfo.tagheight;
 			if (this.imgInfo.ratio > canvasRatio) {
 				console.log("照片宽对齐屏幕");
 				this.canvasInfo.width = uni.getSystemInfoSync().screenWidth;
 				this.canvasInfo.height = Math.round(this.canvasInfo.width / this.imgInfo.ratio);
 				this.canvasInfo.tagheight = Math.round(this.canvasInfo.tagwidth / this.imgInfo.ratio);
 				this.imgInfo.is_kuan = true;
+				console.log("canvasInfo", this.canvasInfo);
+
 			} else {
 				console.log("照片高对齐屏幕");
 				this.canvasInfo.height = this.canvasInfo.tagheight;
 				this.canvasInfo.width = Math.round(this.canvasInfo.height * this.imgInfo.ratio);
 				this.canvasInfo.tagwidth = Math.round(this.canvasInfo.tagheight * this.imgInfo.ratio);
 				console.log("canvasInfo", this.canvasInfo);
+				this.imgInfo.is_kuan = false;
+
 			}
 
-		},
-
-		getImageRGB() {
-			//点击的x，y 取整
-			console.log("touchInfo:", this.touchInfo);
-			const x = Math.round(this.touchInfo.x * this.touchInfo.x_ratio);
-			const y = Math.round(this.touchInfo.y * this.touchInfo.y_ratio);
-			// console.log('ss:', this.canvasInfo.width, this.imgInfo.width);
-			console.log("x,y:", x, y);
-			console.log("canvasInfo:", this.canvasInfo);
-			const pixelIndex = (y * this.imgInfo.data.width + x) * 4;
-			console.log("pixelIndex:", pixelIndex);
-			const red = this.imgInfo.data.data[pixelIndex];
-			const green = this.imgInfo.data.data[pixelIndex + 1];
-			const blue = this.imgInfo.data.data[pixelIndex + 2];
-			// console.log(red, green, blue);
-			this.hexColor = this.rgbToHex(red, green, blue);
-			this.rgb = `RGB: ${red}, ${green}, ${blue}  Hex: ${this.hexColor}`;
-			// this.drawCursor(true, x, y, radius);
-		},
-
-		rgbToHex(red, green, blue) {
-			const toHex = (value) => {
-				const hex = value.toString(16);
-				return hex.length === 1 ? "0" + hex : hex;
-			};
-
-			const hexRed = toHex(red);
-			const hexGreen = toHex(green);
-			const hexBlue = toHex(blue);
-
-			return `#${hexRed}${hexGreen}${hexBlue}`;
 		},
 
 		drawImage() {
@@ -210,14 +204,20 @@ export default {
 							const imageData = this.ctx.getImageData(
 								0,
 								0,
-								this.canvasInfo.tagwidth,
-								this.canvasInfo.tagheight
+								this.canvasInfo.width,
+								this.canvasInfo.height
 							);
 							this.imgInfo.data = imageData;
 							console.log("imageData:", imageData);
 							if (!this.imgInfo.is_kuan) {
-								this.touchInfo.y_ratio = this.canvasInfo.tagheight / res[0].height;
-								this.touchInfo.x_ratio = this.canvasInfo.tagwidth / (this.imgInfo.data.height / this.touchInfo.y_ratio);
+								// console.log('test:', res[0].height, res[0].width);
+								this.touchInfo.y_ratio = this.canvasInfo.height / Math.max(res[0].height, res[0].width);
+								// this.touchInfo.y_ratio = this.canvasInfo.height / res[0].height;
+
+								this.touchInfo.x_ratio = this.touchInfo.y_ratio;
+							} else {
+								this.touchInfo.y_ratio = 1;
+								this.touchInfo.x_ratio = 1;
 							}
 						};
 					} else {
@@ -241,6 +241,41 @@ export default {
 			this.ctx.stroke();
 		},
 
+		getImageRGB() {
+			//点击的x，y 取整
+			console.log("touchInfo:", this.touchInfo);
+			// const x = Math.round(this.touchInfo.x);
+			// const y = Math.round(this.touchInfo.y);
+			const x = Math.round(this.cursorInfo.x);
+			const y = Math.round(this.cursorInfo.y);
+			// console.log('ss:', this.canvasInfo.width, this.imgInfo.width);
+			console.log("x,y:", x, y);
+			console.log("cursorInfo:", this.cursorInfo);
+			const pixelIndex = (y * this.imgInfo.data.width + x) * 4;
+			console.log("pixelIndex:", pixelIndex);
+			const red = this.imgInfo.data.data[pixelIndex];
+			const green = this.imgInfo.data.data[pixelIndex + 1];
+			const blue = this.imgInfo.data.data[pixelIndex + 2];
+			// console.log(red, green, blue);
+			this.hexColor = this.rgbToHex(red, green, blue);
+			this.rgb = `RGB: ${red}, ${green}, ${blue}  Hex: ${this.hexColor}`;
+			return { "red": red, "green": green, "blue": blue };
+			// this.drawCursor(true, x, y, radius);
+		},
+
+		rgbToHex(red, green, blue) {
+			const toHex = (value) => {
+				const hex = value.toString(16);
+				return hex.length === 1 ? "0" + hex : hex;
+			};
+
+			const hexRed = toHex(red);
+			const hexGreen = toHex(green);
+			const hexBlue = toHex(blue);
+
+			return `#${hexRed}${hexGreen}${hexBlue}`;
+		},
+
 		setCursorColor(color) {
 			this.cursorInfo.color = color;
 			this.drawImage(
@@ -256,13 +291,20 @@ export default {
 			const touch = event.touches[0];
 			this.touchInfo.x = Math.round(touch.x);
 			this.touchInfo.y = Math.round(touch.y);
-			this.cursorInfo.x = this.touchInfo.x;
-			this.cursorInfo.y = this.touchInfo.y;
-			console.log("touch start", this.touchInfo.x, this.touchInfo.y);
+			if (!this.imgInfo.is_kuan) {
+				console.log("进入非宽屏");
+				this.cursorInfo.x = this.touchInfo.x * this.touchInfo.x_ratio;
+				this.cursorInfo.y = this.touchInfo.y * this.touchInfo.y_ratio;
+			} else {
+				this.cursorInfo.x = this.touchInfo.x;
+				this.cursorInfo.y = this.touchInfo.y;
+			}
+			console.log("touchInfo start", this.touchInfo.x, this.touchInfo.y);
+			console.log("cursorInfo start", this.cursorInfo.x, this.cursorInfo.y);
 			// this.drawCursor(this.touchInfo.x, this.touchInfo.y, this.cursorInfo.radius);
 			// console.log("start x,y:", this.touchInfo.x, this.touchInfo.y);
 			this.touchInfo.isDragging = true;
-			this.getImageRGB();
+			this.pickerColor = this.getImageRGB();
 		},
 
 		handleTouchMove(event) {
@@ -272,23 +314,36 @@ export default {
 			const touch = event.touches[0];
 			const deltaX = touch.x - this.touchInfo.x;
 			const deltaY = touch.y - this.touchInfo.y;
-
-			this.cursorInfo.x += deltaX;
-			this.cursorInfo.y += deltaY;
+			if (!this.imgInfo.is_kuan) {
+				this.cursorInfo.x += deltaX * this.touchInfo.x_ratio;
+				this.cursorInfo.y += deltaY * this.touchInfo.y_ratio;
+			} else {
+				this.cursorInfo.x += deltaX;
+				this.cursorInfo.y += deltaY;
+			}
 
 			// Update start position for the next move event
 			this.touchInfo.x = touch.x;
 			this.touchInfo.y = touch.y;
 			// console.log("move x,y:", this.cursorInfo.x, this.cursorInfo.y);
-			this.getImageRGB();
+			this.pickerColor = this.getImageRGB();
+
 		},
 
 		handleTouchEnd() {
 			// Handle touch end event
 			this.drawCursor()
 			this.touchInfo.isDragging = false;
+
 			// this.drawCursor(this.touchInfo.x, this.touchInfo.y, this.cursorInfo.radius);
 		},
+
+	},
+
+	mounted() {
+		// 在页面加载时发送数据
+		console.log("onload");
+		this.sendPickerColors();
 	},
 };
 </script>
@@ -307,6 +362,6 @@ export default {
 	align-items: center;
 	justify-content: center;
 	text-align: center;
-	font-size: 40rpx;
+	font-size: 30rpx;
 }
 </style>

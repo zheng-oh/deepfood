@@ -3,14 +3,15 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "uni-app"
+				"navigationBarTitleText": "Picker"
 			}
 		},
 		{
-			"path": "pages/move/move",
-			"style": {
-				"navigationBarTitleText": "move",
-				"enablePullDownRefresh": false
+			"path" : "pages/db/db",
+			"style" : 
+			{
+				"navigationBarTitleText" : "db",
+				"enablePullDownRefresh" : false
 			}
 		}
 	],
@@ -27,8 +28,8 @@
 				"selectedIconPath": "static/logo.png"
 			},
 			{
-				"pagePath": "pages/move/move",
-				"text": "动态",
+				"pagePath": "pages/db/db",
+				"text": "数据库",
 				"iconPath": "static/logo.png",
 				"selectedIconPath": "static/logo.png"
 			}

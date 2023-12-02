@@ -3,7 +3,13 @@ const common_vendor = require("../../common/vendor.js");
 const _sfc_main = {
   data() {
     return {
-      pickerColor: [],
+      pickerColors: [],
+      pickerColor: {
+        red: 0,
+        green: 0,
+        blue: 0
+        // hex: "",
+      },
       imgInfo: {
         width: 0,
         height: 0,
@@ -14,6 +20,8 @@ const _sfc_main = {
         is_kuan: false
       },
       canvasInfo: {
+        tagwidth_source: 750,
+        tagheight_source: 750,
         tagwidth: 750,
         tagheight: 750,
         width: 0,
@@ -41,6 +49,9 @@ const _sfc_main = {
     };
   },
   methods: {
+    sendPickerColors() {
+      common_vendor.index.$emit("pickerColorsEvent", this.pickerColors);
+    },
     deleteImage() {
       this.imgInfo.url = "";
     },
@@ -68,46 +79,31 @@ const _sfc_main = {
         }
       });
     },
+    addToDB() {
+      this.pickerColors.push(this.pickerColor);
+      console.log("发送pickerColors:", this.pickerColors);
+      this.sendPickerColors();
+    },
     setCanvas() {
+      this.canvasInfo.tagwidth = this.canvasInfo.tagwidth_source;
+      this.canvasInfo.tagheight = this.canvasInfo.tagheight_source;
       this.imgInfo.ratio = this.imgInfo.width / this.imgInfo.height;
-      const canvasRatio = this.canvasInfo.tagwidth / this.canvasInfo.tagheight;
+      const canvasRatio = this.canvasInfo.tagwidth_source / this.canvasInfo.tagheight;
       if (this.imgInfo.ratio > canvasRatio) {
         console.log("照片宽对齐屏幕");
         this.canvasInfo.width = common_vendor.index.getSystemInfoSync().screenWidth;
         this.canvasInfo.height = Math.round(this.canvasInfo.width / this.imgInfo.ratio);
         this.canvasInfo.tagheight = Math.round(this.canvasInfo.tagwidth / this.imgInfo.ratio);
         this.imgInfo.is_kuan = true;
+        console.log("canvasInfo", this.canvasInfo);
       } else {
         console.log("照片高对齐屏幕");
         this.canvasInfo.height = this.canvasInfo.tagheight;
         this.canvasInfo.width = Math.round(this.canvasInfo.height * this.imgInfo.ratio);
         this.canvasInfo.tagwidth = Math.round(this.canvasInfo.tagheight * this.imgInfo.ratio);
         console.log("canvasInfo", this.canvasInfo);
+        this.imgInfo.is_kuan = false;
       }
-    },
-    getImageRGB() {
-      console.log("touchInfo:", this.touchInfo);
-      const x = Math.round(this.touchInfo.x * this.touchInfo.x_ratio);
-      const y = Math.round(this.touchInfo.y * this.touchInfo.y_ratio);
-      console.log("x,y:", x, y);
-      console.log("canvasInfo:", this.canvasInfo);
-      const pixelIndex = (y * this.imgInfo.data.width + x) * 4;
-      console.log("pixelIndex:", pixelIndex);
-      const red = this.imgInfo.data.data[pixelIndex];
-      const green = this.imgInfo.data.data[pixelIndex + 1];
-      const blue = this.imgInfo.data.data[pixelIndex + 2];
-      this.hexColor = this.rgbToHex(red, green, blue);
-      this.rgb = `RGB: ${red}, ${green}, ${blue}  Hex: ${this.hexColor}`;
-    },
-    rgbToHex(red, green, blue) {
-      const toHex = (value) => {
-        const hex = value.toString(16);
-        return hex.length === 1 ? "0" + hex : hex;
-      };
-      const hexRed = toHex(red);
-      const hexGreen = toHex(green);
-      const hexBlue = toHex(blue);
-      return `#${hexRed}${hexGreen}${hexBlue}`;
     },
     drawImage() {
       console.log("start draw");
@@ -128,14 +124,17 @@ const _sfc_main = {
             const imageData = this.ctx.getImageData(
               0,
               0,
-              this.canvasInfo.tagwidth,
-              this.canvasInfo.tagheight
+              this.canvasInfo.width,
+              this.canvasInfo.height
             );
             this.imgInfo.data = imageData;
             console.log("imageData:", imageData);
             if (!this.imgInfo.is_kuan) {
-              this.touchInfo.y_ratio = this.canvasInfo.tagheight / res[0].height;
-              this.touchInfo.x_ratio = this.canvasInfo.tagwidth / (this.imgInfo.data.height / this.touchInfo.y_ratio);
+              this.touchInfo.y_ratio = this.canvasInfo.height / Math.max(res[0].height, res[0].width);
+              this.touchInfo.x_ratio = this.touchInfo.y_ratio;
+            } else {
+              this.touchInfo.y_ratio = 1;
+              this.touchInfo.x_ratio = 1;
             }
           };
         } else {
@@ -153,6 +152,31 @@ const _sfc_main = {
       this.ctx.strokeStyle = this.cursorInfo.color;
       this.ctx.stroke();
     },
+    getImageRGB() {
+      console.log("touchInfo:", this.touchInfo);
+      const x = Math.round(this.cursorInfo.x);
+      const y = Math.round(this.cursorInfo.y);
+      console.log("x,y:", x, y);
+      console.log("cursorInfo:", this.cursorInfo);
+      const pixelIndex = (y * this.imgInfo.data.width + x) * 4;
+      console.log("pixelIndex:", pixelIndex);
+      const red = this.imgInfo.data.data[pixelIndex];
+      const green = this.imgInfo.data.data[pixelIndex + 1];
+      const blue = this.imgInfo.data.data[pixelIndex + 2];
+      this.hexColor = this.rgbToHex(red, green, blue);
+      this.rgb = `RGB: ${red}, ${green}, ${blue}  Hex: ${this.hexColor}`;
+      return { "red": red, "green": green, "blue": blue };
+    },
+    rgbToHex(red, green, blue) {
+      const toHex = (value) => {
+        const hex = value.toString(16);
+        return hex.length === 1 ? "0" + hex : hex;
+      };
+      const hexRed = toHex(red);
+      const hexGreen = toHex(green);
+      const hexBlue = toHex(blue);
+      return `#${hexRed}${hexGreen}${hexBlue}`;
+    },
     setCursorColor(color) {
       this.cursorInfo.color = color;
       this.drawImage(
@@ -166,11 +190,18 @@ const _sfc_main = {
       const touch = event.touches[0];
       this.touchInfo.x = Math.round(touch.x);
       this.touchInfo.y = Math.round(touch.y);
-      this.cursorInfo.x = this.touchInfo.x;
-      this.cursorInfo.y = this.touchInfo.y;
-      console.log("touch start", this.touchInfo.x, this.touchInfo.y);
+      if (!this.imgInfo.is_kuan) {
+        console.log("进入非宽屏");
+        this.cursorInfo.x = this.touchInfo.x * this.touchInfo.x_ratio;
+        this.cursorInfo.y = this.touchInfo.y * this.touchInfo.y_ratio;
+      } else {
+        this.cursorInfo.x = this.touchInfo.x;
+        this.cursorInfo.y = this.touchInfo.y;
+      }
+      console.log("touchInfo start", this.touchInfo.x, this.touchInfo.y);
+      console.log("cursorInfo start", this.cursorInfo.x, this.cursorInfo.y);
       this.touchInfo.isDragging = true;
-      this.getImageRGB();
+      this.pickerColor = this.getImageRGB();
     },
     handleTouchMove(event) {
       if (!this.touchInfo.isDragging)
@@ -178,16 +209,25 @@ const _sfc_main = {
       const touch = event.touches[0];
       const deltaX = touch.x - this.touchInfo.x;
       const deltaY = touch.y - this.touchInfo.y;
-      this.cursorInfo.x += deltaX;
-      this.cursorInfo.y += deltaY;
+      if (!this.imgInfo.is_kuan) {
+        this.cursorInfo.x += deltaX * this.touchInfo.x_ratio;
+        this.cursorInfo.y += deltaY * this.touchInfo.y_ratio;
+      } else {
+        this.cursorInfo.x += deltaX;
+        this.cursorInfo.y += deltaY;
+      }
       this.touchInfo.x = touch.x;
       this.touchInfo.y = touch.y;
-      this.getImageRGB();
+      this.pickerColor = this.getImageRGB();
     },
     handleTouchEnd() {
       this.drawCursor();
       this.touchInfo.isDragging = false;
     }
+  },
+  mounted() {
+    console.log("onload");
+    this.sendPickerColors();
   }
 };
 function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
@@ -216,12 +256,14 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     q: $data.squareSize + "px",
     r: $data.squareSize + "px",
     s: $data.hexColor,
-    t: common_vendor.t($data.rgb)
+    t: common_vendor.t($data.rgb),
+    v: common_vendor.o((...args) => $options.addToDB && $options.addToDB(...args))
   } : {}, {
-    v: common_vendor.o((...args) => $options.addImage && $options.addImage(...args)),
-    w: $data.imgInfo.url
+    w: common_vendor.t(!$data.imgInfo.url ? "Add Image" : "Alter Image"),
+    x: common_vendor.o((...args) => $options.addImage && $options.addImage(...args)),
+    y: $data.imgInfo.url
   }, $data.imgInfo.url ? {
-    x: common_vendor.o((...args) => $options.deleteImage && $options.deleteImage(...args))
+    z: common_vendor.o((...args) => $options.deleteImage && $options.deleteImage(...args))
   } : {});
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "C:/Users/zxing/Desktop/pickercolor/pages/index/index.vue"]]);

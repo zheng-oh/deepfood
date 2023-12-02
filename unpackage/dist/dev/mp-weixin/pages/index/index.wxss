@@ -12,5 +12,5 @@
 	align-items: center;
 	justify-content: center;
 	text-align: center;
-	font-size: 40rpx;
+	font-size: 30rpx;
 }
