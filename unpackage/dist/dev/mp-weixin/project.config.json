@@ -8,7 +8,7 @@
     "urlCheck": false,
     "es6": true,
     "postcss": false,
-    "minified": false,
+    "minified": true,
     "newFeature": true,
     "bigPackageSizeSupport": true,
     "babelSetting": {
@@ -19,7 +19,7 @@
   },
   "compileType": "miniprogram",
   "libVersion": "3.2.2",
-  "appid": "wx516e502a2f730433",
+  "appid": "wxd3374d026a348782",
   "projectname": "pickercolor",
   "condition": {},
   "editorSetting": {

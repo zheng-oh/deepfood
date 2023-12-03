@@ -70,10 +70,16 @@ const _sfc_main = {
               this.imgInfo.width = res2.width;
               this.imgInfo.height = res2.height;
               console.log("imgInfo", this.imgInfo);
-              this.setCanvas();
+              setTimeout(() => {
+                this.setCanvas(() => {
+                  this.drawImage();
+                });
+              }, 100);
               console.log("系统真实dpr:", common_vendor.index.getSystemInfoSync().pixelRatio);
-              console.log("系统真实宽度：", common_vendor.index.getSystemInfoSync().screenWidth);
-              this.drawImage();
+              console.log(
+                "系统真实宽度：",
+                common_vendor.index.getSystemInfoSync().screenWidth
+              );
             }
           });
         }
@@ -84,7 +90,7 @@ const _sfc_main = {
       console.log("发送pickerColors:", this.pickerColors);
       this.sendPickerColors();
     },
-    setCanvas() {
+    setCanvas(callback) {
       this.canvasInfo.tagwidth = this.canvasInfo.tagwidth_source;
       this.canvasInfo.tagheight = this.canvasInfo.tagheight_source;
       this.imgInfo.ratio = this.imgInfo.width / this.imgInfo.height;
@@ -92,25 +98,36 @@ const _sfc_main = {
       if (this.imgInfo.ratio > canvasRatio) {
         console.log("照片宽对齐屏幕");
         this.canvasInfo.width = common_vendor.index.getSystemInfoSync().screenWidth;
-        this.canvasInfo.height = Math.round(this.canvasInfo.width / this.imgInfo.ratio);
-        this.canvasInfo.tagheight = Math.round(this.canvasInfo.tagwidth / this.imgInfo.ratio);
+        this.canvasInfo.height = Math.round(
+          this.canvasInfo.width / this.imgInfo.ratio
+        );
+        this.canvasInfo.tagheight = Math.round(
+          this.canvasInfo.tagwidth / this.imgInfo.ratio
+        );
         this.imgInfo.is_kuan = true;
         console.log("canvasInfo", this.canvasInfo);
       } else {
         console.log("照片高对齐屏幕");
         this.canvasInfo.height = this.canvasInfo.tagheight;
-        this.canvasInfo.width = Math.round(this.canvasInfo.height * this.imgInfo.ratio);
-        this.canvasInfo.tagwidth = Math.round(this.canvasInfo.tagheight * this.imgInfo.ratio);
+        this.canvasInfo.width = Math.round(
+          this.canvasInfo.height * this.imgInfo.ratio
+        );
+        this.canvasInfo.tagwidth = Math.round(
+          this.canvasInfo.tagheight * this.imgInfo.ratio
+        );
         console.log("canvasInfo", this.canvasInfo);
         this.imgInfo.is_kuan = false;
+      }
+      if (typeof callback === "function") {
+        callback();
       }
     },
     drawImage() {
       console.log("start draw");
       const query = common_vendor.index.createSelectorQuery();
       query.select("#myCanvas").fields({ node: true, size: true }).exec((res) => {
-        const canvas = res[0].node;
         console.log("ress:", res);
+        const canvas = res[0].node;
         console.log("<canvas> size:", res[0].width, res[0].height);
         if (canvas) {
           this.ctx = canvas.getContext("2d");
@@ -120,7 +137,13 @@ const _sfc_main = {
           const img = canvas.createImage();
           img.src = this.imgInfo.url;
           img.onload = () => {
-            this.ctx.drawImage(img, 0, 0, this.canvasInfo.width, this.canvasInfo.height);
+            this.ctx.drawImage(
+              img,
+              0,
+              0,
+              this.canvasInfo.width,
+              this.canvasInfo.height
+            );
             const imageData = this.ctx.getImageData(
               0,
               0,
@@ -145,10 +168,22 @@ const _sfc_main = {
     drawCursor() {
       this.ctx.beginPath();
       this.ctx.lineWidth = 2;
-      this.ctx.moveTo(this.cursorInfo.x, this.cursorInfo.y - this.cursorInfo.radius);
-      this.ctx.lineTo(this.cursorInfo.x, this.cursorInfo.y + this.cursorInfo.radius);
-      this.ctx.moveTo(this.cursorInfo.x - this.cursorInfo.radius, this.cursorInfo.y);
-      this.ctx.lineTo(this.cursorInfo.x + this.cursorInfo.radius, this.cursorInfo.y);
+      this.ctx.moveTo(
+        this.cursorInfo.x,
+        this.cursorInfo.y - this.cursorInfo.radius
+      );
+      this.ctx.lineTo(
+        this.cursorInfo.x,
+        this.cursorInfo.y + this.cursorInfo.radius
+      );
+      this.ctx.moveTo(
+        this.cursorInfo.x - this.cursorInfo.radius,
+        this.cursorInfo.y
+      );
+      this.ctx.lineTo(
+        this.cursorInfo.x + this.cursorInfo.radius,
+        this.cursorInfo.y
+      );
       this.ctx.strokeStyle = this.cursorInfo.color;
       this.ctx.stroke();
     },
@@ -165,7 +200,7 @@ const _sfc_main = {
       const blue = this.imgInfo.data.data[pixelIndex + 2];
       this.hexColor = this.rgbToHex(red, green, blue);
       this.rgb = `RGB: ${red}, ${green}, ${blue}  Hex: ${this.hexColor}`;
-      return { "red": red, "green": green, "blue": blue };
+      return { red, green, blue };
     },
     rgbToHex(red, green, blue) {
       const toHex = (value) => {
@@ -179,12 +214,8 @@ const _sfc_main = {
     },
     setCursorColor(color) {
       this.cursorInfo.color = color;
-      this.drawImage(
-        true,
-        this.cursorInfo.x,
-        this.cursorInfo.y,
-        this.cursorInfo.radius
-      );
+      this.drawImage();
+      console.log("draw cursor");
     },
     handleTouchStart(event) {
       const touch = event.touches[0];

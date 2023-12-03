@@ -1,11 +1,12 @@
 <template>
 	<view>
-		<view style="display: flex; justify-content: center;">
+		<view style="display: flex; justify-content: center">
 			<!-- <image v-if="imgInfo.url" class="image-item" :src="imgInfo.url" mode="aspectFit" @tap="goToDetail" /> -->
 			<canvas v-if="imgInfo.url" type="2d" id="myCanvas" canvas-id="myCanvas" @touchstart="handleTouchStart"
-				@touchmove="handleTouchMove" @touchend="handleTouchEnd"
-				:style="{ width: canvasInfo.tagwidth + 'rpx', height: canvasInfo.tagheight + 'rpx' }"></canvas>
-
+				@touchmove="handleTouchMove" @touchend="handleTouchEnd" :style="{
+					width: canvasInfo.tagwidth + 'rpx',
+					height: canvasInfo.tagheight + 'rpx',
+				}"></canvas>
 		</view>
 		<view v-if="imgInfo.url" style="display: flex; flex-direction: row">
 			<text class="large-text">Cursor Select</text>
@@ -48,8 +49,9 @@
 			<button type="primary" @tap="addToDB">AddToDB</button>
 		</view>
 		<view style="display: flex; flex-direction: row">
-
-			<button type="primary" @tap="addImage">{{ !imgInfo.url ? "Add Image" : "Alter Image" }}</button>
+			<button type="primary" @tap="addImage">
+				{{ !imgInfo.url ? "Add Image" : "Alter Image" }}
+			</button>
 			<button v-if="imgInfo.url" type="warn" @tap="deleteImage">Delete</button>
 		</view>
 	</view>
@@ -60,8 +62,7 @@
 export default {
 	data() {
 		return {
-			pickerColors: [
-			],
+			pickerColors: [],
 			pickerColor: {
 				red: 0,
 				green: 0,
@@ -105,10 +106,11 @@ export default {
 			squareSize: 50, // 正方形的大小
 		};
 	},
+
 	methods: {
 		sendPickerColors() {
 			// 发送事件到事件总线
-			uni.$emit('pickerColorsEvent', this.pickerColors);
+			uni.$emit("pickerColorsEvent", this.pickerColors);
 		},
 		deleteImage() {
 			this.imgInfo.url = "";
@@ -129,22 +131,26 @@ export default {
 							this.imgInfo.width = res.width;
 							this.imgInfo.height = res.height;
 							console.log("imgInfo", this.imgInfo);
-							this.setCanvas()
-							//屏幕缩放比例
+							//我想要执行完setCanvas之后回调drawImage
+							setTimeout(() => {
+								this.setCanvas(() => {
+									this.drawImage();
+								});
+							}, 100);
+							// this.setCanvas(() => {
+							// 	this.drawImage();  // 在 setCanvas 执行完成后调用 drawImage
+							// });
 							console.log("系统真实dpr:", uni.getSystemInfoSync().pixelRatio);
-							console.log("系统真实宽度：", uni.getSystemInfoSync().screenWidth)
-							// this.dpr =
-							// 	this.imgInfo.width / uni.getSystemInfoSync().screenWidth;
-							// console.log("dpr:", this.dpr);
-							//打印屏幕真实宽度
-							// console.log("screen width:", uni.getSystemInfoSync().screenWidth);
-							// console.log("canvasInfo", this.canvasInfo);
-							this.drawImage(
+							console.log(
+								"系统真实宽度：",
+								uni.getSystemInfoSync().screenWidth
 							);
+							// this.drawImage();
 						},
 					});
 				},
 			});
+
 		},
 		addToDB() {
 			// 将颜色添加到数据库
@@ -153,29 +159,38 @@ export default {
 			console.log("发送pickerColors:", this.pickerColors);
 			this.sendPickerColors();
 		},
-		setCanvas() {
+		setCanvas(callback) {
 			this.canvasInfo.tagwidth = this.canvasInfo.tagwidth_source;
 			this.canvasInfo.tagheight = this.canvasInfo.tagheight_source;
 			this.imgInfo.ratio = this.imgInfo.width / this.imgInfo.height;
-			const canvasRatio = this.canvasInfo.tagwidth_source / this.canvasInfo.tagheight;
+			const canvasRatio =
+				this.canvasInfo.tagwidth_source / this.canvasInfo.tagheight;
 			if (this.imgInfo.ratio > canvasRatio) {
 				console.log("照片宽对齐屏幕");
 				this.canvasInfo.width = uni.getSystemInfoSync().screenWidth;
-				this.canvasInfo.height = Math.round(this.canvasInfo.width / this.imgInfo.ratio);
-				this.canvasInfo.tagheight = Math.round(this.canvasInfo.tagwidth / this.imgInfo.ratio);
+				this.canvasInfo.height = Math.round(
+					this.canvasInfo.width / this.imgInfo.ratio
+				);
+				this.canvasInfo.tagheight = Math.round(
+					this.canvasInfo.tagwidth / this.imgInfo.ratio
+				);
 				this.imgInfo.is_kuan = true;
 				console.log("canvasInfo", this.canvasInfo);
-
 			} else {
 				console.log("照片高对齐屏幕");
 				this.canvasInfo.height = this.canvasInfo.tagheight;
-				this.canvasInfo.width = Math.round(this.canvasInfo.height * this.imgInfo.ratio);
-				this.canvasInfo.tagwidth = Math.round(this.canvasInfo.tagheight * this.imgInfo.ratio);
+				this.canvasInfo.width = Math.round(
+					this.canvasInfo.height * this.imgInfo.ratio
+				);
+				this.canvasInfo.tagwidth = Math.round(
+					this.canvasInfo.tagheight * this.imgInfo.ratio
+				);
 				console.log("canvasInfo", this.canvasInfo);
 				this.imgInfo.is_kuan = false;
-
 			}
-
+			if (typeof callback === 'function') {
+				callback();  // 执行回调函数
+			}
 		},
 
 		drawImage() {
@@ -186,8 +201,9 @@ export default {
 				.select("#myCanvas")
 				.fields({ node: true, size: true })
 				.exec((res) => {
-					const canvas = res[0].node; // Add null check here
 					console.log("ress:", res);
+
+					const canvas = res[0].node; // Add null check here
 					console.log("<canvas> size:", res[0].width, res[0].height);
 					if (canvas) {
 						this.ctx = canvas.getContext("2d");
@@ -199,7 +215,13 @@ export default {
 						img.src = this.imgInfo.url;
 
 						img.onload = () => {
-							this.ctx.drawImage(img, 0, 0, this.canvasInfo.width, this.canvasInfo.height);
+							this.ctx.drawImage(
+								img,
+								0,
+								0,
+								this.canvasInfo.width,
+								this.canvasInfo.height
+							);
 
 							const imageData = this.ctx.getImageData(
 								0,
@@ -211,7 +233,9 @@ export default {
 							console.log("imageData:", imageData);
 							if (!this.imgInfo.is_kuan) {
 								// console.log('test:', res[0].height, res[0].width);
-								this.touchInfo.y_ratio = this.canvasInfo.height / Math.max(res[0].height, res[0].width);
+								this.touchInfo.y_ratio =
+									this.canvasInfo.height /
+									Math.max(res[0].height, res[0].width);
 								// this.touchInfo.y_ratio = this.canvasInfo.height / res[0].height;
 
 								this.touchInfo.x_ratio = this.touchInfo.y_ratio;
@@ -230,12 +254,24 @@ export default {
 			// Clear the canvas before drawing the new cursor
 			this.ctx.beginPath();
 			this.ctx.lineWidth = 2; // 可以根据需要调整线的宽度
-			this.ctx.moveTo(this.cursorInfo.x, this.cursorInfo.y - this.cursorInfo.radius);
-			this.ctx.lineTo(this.cursorInfo.x, this.cursorInfo.y + this.cursorInfo.radius);
+			this.ctx.moveTo(
+				this.cursorInfo.x,
+				this.cursorInfo.y - this.cursorInfo.radius
+			);
+			this.ctx.lineTo(
+				this.cursorInfo.x,
+				this.cursorInfo.y + this.cursorInfo.radius
+			);
 
 			// 绘制水平线
-			this.ctx.moveTo(this.cursorInfo.x - this.cursorInfo.radius, this.cursorInfo.y);
-			this.ctx.lineTo(this.cursorInfo.x + this.cursorInfo.radius, this.cursorInfo.y);
+			this.ctx.moveTo(
+				this.cursorInfo.x - this.cursorInfo.radius,
+				this.cursorInfo.y
+			);
+			this.ctx.lineTo(
+				this.cursorInfo.x + this.cursorInfo.radius,
+				this.cursorInfo.y
+			);
 
 			this.ctx.strokeStyle = this.cursorInfo.color;
 			this.ctx.stroke();
@@ -259,7 +295,7 @@ export default {
 			// console.log(red, green, blue);
 			this.hexColor = this.rgbToHex(red, green, blue);
 			this.rgb = `RGB: ${red}, ${green}, ${blue}  Hex: ${this.hexColor}`;
-			return { "red": red, "green": green, "blue": blue };
+			return { red: red, green: green, blue: blue };
 			// this.drawCursor(true, x, y, radius);
 		},
 
@@ -278,12 +314,14 @@ export default {
 
 		setCursorColor(color) {
 			this.cursorInfo.color = color;
-			this.drawImage(
-				true,
-				this.cursorInfo.x,
-				this.cursorInfo.y,
-				this.cursorInfo.radius
-			);
+			this.drawImage();
+			console.log("draw cursor");
+			// this.drawImage(
+			// 	true,
+			// 	this.cursorInfo.x,
+			// 	this.cursorInfo.y,
+			// 	this.cursorInfo.radius
+			// );
 		},
 
 		handleTouchStart(event) {
@@ -327,17 +365,15 @@ export default {
 			this.touchInfo.y = touch.y;
 			// console.log("move x,y:", this.cursorInfo.x, this.cursorInfo.y);
 			this.pickerColor = this.getImageRGB();
-
 		},
 
 		handleTouchEnd() {
 			// Handle touch end event
-			this.drawCursor()
+			this.drawCursor();
 			this.touchInfo.isDragging = false;
 
 			// this.drawCursor(this.touchInfo.x, this.touchInfo.y, this.cursorInfo.radius);
 		},
-
 	},
 
 	mounted() {

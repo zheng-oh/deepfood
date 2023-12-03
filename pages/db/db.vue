@@ -7,6 +7,7 @@
 			</view>
 			<text class="large-text">{{ color.red }}, {{ color.green }}, {{ color.blue }}</text>
 		</view>
+		<button @tap="cleardb">清空 db</button>
 	</view>
 </template>
   
@@ -17,6 +18,11 @@ export default {
 		return {
 			receivedPickerColors: [],
 		};
+	},
+	methods: {
+		cleardb() {
+			this.receivedPickerColors = [];
+		},
 	},
 	mounted() {
 		// 监听事件并在收到数据时更新详情页的数据

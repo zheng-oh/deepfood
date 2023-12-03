@@ -6,6 +6,11 @@ const _sfc_main = {
       receivedPickerColors: []
     };
   },
+  methods: {
+    cleardb() {
+      this.receivedPickerColors = [];
+    }
+  },
   mounted() {
     common_vendor.index.$on("pickerColorsEvent", (pickerColors) => {
       this.receivedPickerColors = pickerColors;
@@ -23,7 +28,8 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
         d: common_vendor.t(color.blue),
         e: index
       };
-    })
+    }),
+    b: common_vendor.o((...args) => $options.cleardb && $options.cleardb(...args))
   };
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "C:/Users/zxing/Desktop/pickercolor/pages/db/db.vue"]]);
