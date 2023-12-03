@@ -8,7 +8,7 @@
 					height: canvasInfo.tagheight + 'rpx',
 				}"></canvas>
 		</view>
-		<view v-if="imgInfo.url" style="display: flex; flex-direction: row">
+		<view class="pickerview" v-if="imgInfo.url" style="display: flex; flex-direction: row">
 			<text class="large-text">Cursor Select</text>
 			<button @tap="setCursorColor('red')" :style="{
 				color: 'red',
@@ -39,16 +39,19 @@
 				十
 			</button>
 		</view>
-		<view v-if="imgInfo.url" class="pickerview" style="display: flex; flex-direction: row">
+		<view v-if="this.hexColor && this.imgInfo.url" class="pickerview"
+			:style="{ border: `6rpx solid ` + this.hexColor }">
 			<view :style="{
 				width: squareSize + 'px',
 				height: squareSize + 'px',
 				backgroundColor: hexColor,
+				marginLeft: '10rpx',
+				marginRight: '10rpx',
 			}"></view>
 			<text class="large-text"> {{ rgb }}</text>
-			<button type="primary" @tap="addToDB">AddToDB</button>
+			<button class="m-btn" @tap="addToDB">Save</button>
 		</view>
-		<view style="display: flex; flex-direction: row">
+		<view class="pickerview">
 			<button type="primary" @tap="addImage">
 				{{ !imgInfo.url ? "Add Image" : "Alter Image" }}
 			</button>
@@ -74,22 +77,22 @@ export default {
 				height: 0,
 				url: "",
 				data: [],
-				scale: 1,
 				ratio: 1,
 				is_kuan: false,
 			},
 			canvasInfo: {
 				tagwidth_source: 750,
-				tagheight_source: 750,
-				tagwidth: 750,
-				tagheight: 750,
+				tagheight_source: 1000,
+				tagwidth: 0,
+				tagheight: 0,
 				width: 0,
 				height: 0,
 			},
 			cursorInfo: {
 				x: 100,
 				y: 100,
-				radius: 10,
+				radius: 60,
+				lineWidth: 20,
 				color: "red",
 			},
 			touchInfo: {
@@ -103,7 +106,7 @@ export default {
 			drp: 0,
 			rgb: "",
 			hexColor: "",
-			squareSize: 50, // 正方形的大小
+			squareSize: 40, // 正方形的大小
 		};
 	},
 
@@ -131,6 +134,8 @@ export default {
 							this.imgInfo.width = res.width;
 							this.imgInfo.height = res.height;
 							console.log("imgInfo", this.imgInfo);
+							this.canvasInfo.tagwidth = this.canvasInfo.tagwidth_source
+							this.canvasInfo.tagheight = this.canvasInfo.tagheight_source
 							//我想要执行完setCanvas之后回调drawImage
 							setTimeout(() => {
 								this.setCanvas(() => {
@@ -140,7 +145,9 @@ export default {
 							// this.setCanvas(() => {
 							// 	this.drawImage();  // 在 setCanvas 执行完成后调用 drawImage
 							// });
-							console.log("系统真实dpr:", uni.getSystemInfoSync().pixelRatio);
+							this.drp = uni.getSystemInfoSync().pixelRatio;
+
+							console.log("系统真实dpr:", this.drp);
 							console.log(
 								"系统真实宽度：",
 								uni.getSystemInfoSync().screenWidth
@@ -164,7 +171,7 @@ export default {
 			this.canvasInfo.tagheight = this.canvasInfo.tagheight_source;
 			this.imgInfo.ratio = this.imgInfo.width / this.imgInfo.height;
 			const canvasRatio =
-				this.canvasInfo.tagwidth_source / this.canvasInfo.tagheight;
+				this.canvasInfo.tagwidth / this.canvasInfo.tagheight;
 			if (this.imgInfo.ratio > canvasRatio) {
 				console.log("照片宽对齐屏幕");
 				this.canvasInfo.width = uni.getSystemInfoSync().screenWidth;
@@ -207,36 +214,36 @@ export default {
 					console.log("<canvas> size:", res[0].width, res[0].height);
 					if (canvas) {
 						this.ctx = canvas.getContext("2d");
-						canvas.width = this.canvasInfo.width;
-						canvas.height = this.canvasInfo.height;
+						canvas.width = this.canvasInfo.width * this.drp;
+						canvas.height = this.canvasInfo.height * this.drp;
 						console.log("canvas w;h:", canvas.width, canvas.height);
 
 						const img = canvas.createImage();
 						img.src = this.imgInfo.url;
 
 						img.onload = () => {
+							console.log();
 							this.ctx.drawImage(
 								img,
 								0,
 								0,
-								this.canvasInfo.width,
-								this.canvasInfo.height
+								canvas.width,
+								canvas.height
 							);
 
 							const imageData = this.ctx.getImageData(
 								0,
 								0,
-								this.canvasInfo.width,
-								this.canvasInfo.height
+								canvas.width,
+								canvas.height
 							);
 							this.imgInfo.data = imageData;
 							console.log("imageData:", imageData);
+							console.log('kkk:', this.canvasInfo.height, Math.max(res[0].height, res[0].width));
 							if (!this.imgInfo.is_kuan) {
-								// console.log('test:', res[0].height, res[0].width);
 								this.touchInfo.y_ratio =
 									this.canvasInfo.height /
 									Math.max(res[0].height, res[0].width);
-								// this.touchInfo.y_ratio = this.canvasInfo.height / res[0].height;
 
 								this.touchInfo.x_ratio = this.touchInfo.y_ratio;
 							} else {
@@ -253,7 +260,7 @@ export default {
 		drawCursor() {
 			// Clear the canvas before drawing the new cursor
 			this.ctx.beginPath();
-			this.ctx.lineWidth = 2; // 可以根据需要调整线的宽度
+			this.ctx.lineWidth = this.cursorInfo.lineWidth; // 可以根据需要调整线的宽度
 			this.ctx.moveTo(
 				this.cursorInfo.x,
 				this.cursorInfo.y - this.cursorInfo.radius
@@ -285,8 +292,8 @@ export default {
 			const x = Math.round(this.cursorInfo.x);
 			const y = Math.round(this.cursorInfo.y);
 			// console.log('ss:', this.canvasInfo.width, this.imgInfo.width);
-			console.log("x,y:", x, y);
-			console.log("cursorInfo:", this.cursorInfo);
+			// console.log("x,y:", x, y);
+			// console.log("cursorInfo:", this.cursorInfo);
 			const pixelIndex = (y * this.imgInfo.data.width + x) * 4;
 			console.log("pixelIndex:", pixelIndex);
 			const red = this.imgInfo.data.data[pixelIndex];
@@ -294,8 +301,10 @@ export default {
 			const blue = this.imgInfo.data.data[pixelIndex + 2];
 			// console.log(red, green, blue);
 			this.hexColor = this.rgbToHex(red, green, blue);
-			this.rgb = `RGB: ${red}, ${green}, ${blue}  Hex: ${this.hexColor}`;
+			this.rgb = `RGB(${red}, ${green}, ${blue})  Hex(${this.hexColor})`;
 			return { red: red, green: green, blue: blue };
+
+
 			// this.drawCursor(true, x, y, radius);
 		},
 
@@ -316,12 +325,6 @@ export default {
 			this.cursorInfo.color = color;
 			this.drawImage();
 			console.log("draw cursor");
-			// this.drawImage(
-			// 	true,
-			// 	this.cursorInfo.x,
-			// 	this.cursorInfo.y,
-			// 	this.cursorInfo.radius
-			// );
 		},
 
 		handleTouchStart(event) {
@@ -329,13 +332,14 @@ export default {
 			const touch = event.touches[0];
 			this.touchInfo.x = Math.round(touch.x);
 			this.touchInfo.y = Math.round(touch.y);
+			console.log("touchInfo:", this.touchInfo);
 			if (!this.imgInfo.is_kuan) {
-				console.log("进入非宽屏");
-				this.cursorInfo.x = this.touchInfo.x * this.touchInfo.x_ratio;
-				this.cursorInfo.y = this.touchInfo.y * this.touchInfo.y_ratio;
+				// console.log("进入非宽屏");
+				this.cursorInfo.x = this.touchInfo.x * this.touchInfo.x_ratio * this.drp;
+				this.cursorInfo.y = this.touchInfo.y * this.touchInfo.y_ratio * this.drp;
 			} else {
-				this.cursorInfo.x = this.touchInfo.x;
-				this.cursorInfo.y = this.touchInfo.y;
+				this.cursorInfo.x = this.touchInfo.x * this.drp;
+				this.cursorInfo.y = this.touchInfo.y * this.drp;
 			}
 			console.log("touchInfo start", this.touchInfo.x, this.touchInfo.y);
 			console.log("cursorInfo start", this.cursorInfo.x, this.cursorInfo.y);
@@ -352,12 +356,13 @@ export default {
 			const touch = event.touches[0];
 			const deltaX = touch.x - this.touchInfo.x;
 			const deltaY = touch.y - this.touchInfo.y;
+			// console.log("deltaX,deltaY:", deltaX, deltaY);
 			if (!this.imgInfo.is_kuan) {
-				this.cursorInfo.x += deltaX * this.touchInfo.x_ratio;
-				this.cursorInfo.y += deltaY * this.touchInfo.y_ratio;
+				this.cursorInfo.x += deltaX * this.touchInfo.x_ratio * this.drp;
+				this.cursorInfo.y += deltaY * this.touchInfo.y_ratio * this.drp;
 			} else {
-				this.cursorInfo.x += deltaX;
-				this.cursorInfo.y += deltaY;
+				this.cursorInfo.x += deltaX * this.drp;
+				this.cursorInfo.y += deltaY * this.drp;
 			}
 
 			// Update start position for the next move event
@@ -385,12 +390,23 @@ export default {
 </script>
 <style>
 .pickerview {
-	/* 居中 */
 	display: flex;
-	/* justify-content: center;
-	text-align: center; */
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	margin-top: 10rpx;
+	margin-left: 20rpx;
+	margin-right: 20rpx;
+	/* 右侧空隙 */
+}
 
-	/* 其他样式，根据需要设置 */
+.m-btn {
+	font-size: 25rpx;
+	/* background-color: #6a717b; */
+	background-color: #c2dfff;
+	/* 使用蓝色的十六进制值 */
+
+	/* 调试用的红色边框 */
 }
 
 .large-text {
@@ -399,5 +415,6 @@ export default {
 	justify-content: center;
 	text-align: center;
 	font-size: 30rpx;
+	font-weight: bold;
 }
 </style>

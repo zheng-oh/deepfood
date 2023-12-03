@@ -1,16 +1,1 @@
-
-.pickerview {
-	/* 居中 */
-	display: flex;
-	/* justify-content: center;
-	text-align: center; */
-
-	/* 其他样式，根据需要设置 */
-}
-.large-text {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	text-align: center;
-	font-size: 30rpx;
-}
+.pickerview{display:flex;flex-direction:row;align-items:center;justify-content:center;margin-top:10rpx;margin-left:20rpx;margin-right:20rpx}.m-btn{font-size:25rpx;background-color:#c2dfff}.large-text{display:flex;align-items:center;justify-content:center;text-align:center;font-size:30rpx;font-weight:700}

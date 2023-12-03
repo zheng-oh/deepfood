@@ -7,11 +7,10 @@
 			}
 		},
 		{
-			"path" : "pages/db/db",
-			"style" : 
-			{
-				"navigationBarTitleText" : "db",
-				"enablePullDownRefresh" : false
+			"path": "pages/db/db",
+			"style": {
+				"navigationBarTitleText": "db",
+				"enablePullDownRefresh": false
 			}
 		}
 	],
@@ -23,15 +22,15 @@
 		"list": [
 			{
 				"pagePath": "pages/index/index",
-				"text": "首页",
-				"iconPath": "static/logo.png",
-				"selectedIconPath": "static/logo.png"
+				"text": "RGB",
+				"iconPath": "static/rgb2.png",
+				"selectedIconPath": "static/rgb.png"
 			},
 			{
 				"pagePath": "pages/db/db",
-				"text": "数据库",
-				"iconPath": "static/logo.png",
-				"selectedIconPath": "static/logo.png"
+				"text": "Database",
+				"iconPath": "static/db2.png",
+				"selectedIconPath": "static/db.png"
 			}
 		]
 	},
