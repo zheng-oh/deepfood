@@ -1,13 +1,14 @@
 <template>
 	<view>
-		<text class="large-text"> Colors </text>
-		<view v-for="(color, index) in receivedPickerColors" :key="index" style="display: flex; flex-direction: row">
+		<view v-for="(color, index) in receivedPickerColors" :key="index"
+			style="display: flex; flex-direction: row; margin: 5rpx;">
 			<view
 				:style="{ backgroundColor: `rgb(${color.red},${color.green},${color.blue})`, width: '50px', height: '50px' }">
 			</view>
 			<text class="large-text">{{ color.red }}, {{ color.green }}, {{ color.blue }}</text>
 		</view>
-		<button @tap="cleardb">清空 db</button>
+		<button v-if="receivedPickerColors.length" type="warn" @tap="cleardb"
+			:style="{ marginTop: '20rpx', marginLeft: '60rpx', marginRight: '60rpx' }">Clean</button>
 	</view>
 </template>
   

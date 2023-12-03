@@ -9,7 +9,7 @@
 		{
 			"path": "pages/db/db",
 			"style": {
-				"navigationBarTitleText": "db",
+				"navigationBarTitleText": "Display",
 				"enablePullDownRefresh": false
 			}
 		}
