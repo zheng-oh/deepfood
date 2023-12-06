@@ -1,0 +1,1 @@
+<view class="pickerview"><button type="primary" bindtap="{{b}}">{{a}}</button><button wx:if="{{c}}" type="warn" bindtap="{{d}}">Delete</button></view>

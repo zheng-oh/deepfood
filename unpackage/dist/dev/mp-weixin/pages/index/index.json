@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "Picker",
-  "usingComponents": {}
+  "usingComponents": {
+    "add-img": "../../components/AddImg",
+    "draw-img": "../../components/DrawImg"
+  }
 }

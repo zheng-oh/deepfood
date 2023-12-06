@@ -1,0 +1,1 @@
+<view style="display:flex;justify-content:center"><canvas wx:if="{{a}}" type="2d" id="myCanvas" canvas-id="myCanvas" bindtouchstart="{{b}}" bindtouchmove="{{c}}" bindtouchend="{{d}}" style="{{'width:' + e + ';' + ('height:' + f)}}"></canvas></view>
