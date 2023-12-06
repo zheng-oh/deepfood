@@ -1,1 +1,44 @@
-"use strict";const e=require("../common/vendor.js"),r={__name:"AddImg",setup(l,{expose:c}){const t=e.ref({width:0,height:0,url:"",data:[],ratio:1,is_kuan:!1}),o=e.ref({tagwidth_source:750,tagheight_source:1e3,tagwidth:0,tagheight:0,width:0,height:0}),n=e.ref(0),u=()=>{e.index.chooseImage({count:1,sizeType:["original","compressed"],sourceType:["album","camera"],success:s=>{const i=s.tempFilePaths;t.value.url=i[0],e.index.getImageInfo({src:i[0],success:a=>{t.value.url=a.path,t.value.width=a.width,t.value.height=a.height,o.value.tagwidth=o.value.tagwidth_source,o.value.tagheight=o.value.tagheight_source,n.value=e.index.getSystemInfoSync().pixelRatio,console.log("imginfo:",t.value)}})}})};return c({imgInfo:t}),(s,i)=>e.e({a:e.t(t.value.url?"Alter Image":"Add Image"),b:e.o(u),c:t.value.url},t.value.url?{d:e.o((...a)=>s.deleteImage&&s.deleteImage(...a))}:{})}},g=e._export_sfc(r,[["__file","C:/Users/zxing/Desktop/pickercolor/components/AddImg.vue"]]);wx.createComponent(g);
+"use strict";
+const common_vendor = require("../common/vendor.js");
+const stores_img = require("../stores/img.js");
+const _sfc_main = {
+  __name: "AddImg",
+  setup(__props) {
+    const store = stores_img.useImgStore();
+    const imgInfo = store.imgInfo;
+    const drp = common_vendor.ref(0);
+    const addImage = () => {
+      common_vendor.index.chooseImage({
+        count: 1,
+        sizeType: ["original", "compressed"],
+        sourceType: ["album", "camera"],
+        success: (res) => {
+          const tempFilePaths = res.tempFilePaths;
+          imgInfo.url = tempFilePaths[0];
+          common_vendor.index.getImageInfo({
+            src: tempFilePaths[0],
+            success: (res2) => {
+              imgInfo.url = res2.path;
+              imgInfo.width = res2.width;
+              imgInfo.height = res2.height;
+              imgInfo.ratio = imgInfo.width / imgInfo.height;
+              drp.value = common_vendor.index.getSystemInfoSync().pixelRatio;
+              console.log("子组件imgInfo:", imgInfo);
+            }
+          });
+        }
+      });
+    };
+    return (_ctx, _cache) => {
+      return common_vendor.e({
+        a: common_vendor.t(!common_vendor.unref(imgInfo).url ? "Add Image" : "Alter Image"),
+        b: common_vendor.o(addImage),
+        c: common_vendor.unref(imgInfo).url
+      }, common_vendor.unref(imgInfo).url ? {
+        d: common_vendor.o((...args) => _ctx.deleteImage && _ctx.deleteImage(...args))
+      } : {});
+    };
+  }
+};
+const Component = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["__file", "/Users/xingzheng/Desktop/pickercolor/components/AddImg.vue"]]);
+wx.createComponent(Component);

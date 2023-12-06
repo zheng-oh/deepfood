@@ -1,1 +1,1 @@
-<view><view><button bindtap="{{b}}"> From A: {{a}}</button></view></view>
+<view><view><button bindtap="{{b}}"> From A: {{a}}</button> Img Url: {{c}}</view></view>

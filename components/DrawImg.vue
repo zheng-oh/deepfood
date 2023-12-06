@@ -5,62 +5,55 @@
         width: canvasInfo.tagwidth + 'rpx',
         height: canvasInfo.tagheight + 'rpx',
       }"></canvas>
+    <!-- <view>{{ store.imgInfo.url }}</view> -->
   </view>
 </template>
 
 <script setup>
-import { ref, watchEffect, watch } from 'vue';
-import {
-  store
-} from '@/api/store.js'
+import { ref, watchEffect, onReady } from 'vue';
+import { useImgStore } from '../stores/img';
 const canvasInfo = ref({
   tagwidth_source: 750,
-  tagheight_source: 1000,
-  tagwidth: 0,
-  tagheight: 0,
+  tagheight_source: 750,
+  tagwidth: 750,
+  tagheight: 750,
   width: 0,
   height: 0,
 });
 
-const setCanvas = (callback) => {
+const store = useImgStore();
+const imgurl = (store.imgInfo.url);
+
+const setCanvas = () => {
+  console.log("进入setCanvas");
   if (store.imgInfo.url === '') {
     return;
   }
-  console.log("执行了DrawImg:", store.imgInfo.url);
-  canvasInfo.value.tagwidth = canvasInfo.value.tagwidth_source;
-  canvasInfo.value.tagheight = canvasInfo.value.tagheight_source;
-  store.imgInfo.ratio = store.imgInfo.width / store.imgInfo.height;
+  console.log("执行了setCanvas:", store.imgInfo.url);
+  // canvasInfo.value.tagwidth = canvasInfo.value.tagwidth_source;
+  // canvasInfo.value.tagheight = canvasInfo.value.tagheight_source;
   const canvasRatio = canvasInfo.value.tagwidth / canvasInfo.value.tagheight;
   if (store.imgInfo.ratio > canvasRatio) {
     canvasInfo.value.width = uni.getSystemInfoSync().screenWidth;
     canvasInfo.value.height = Math.round(
       canvasInfo.value.width / store.imgInfo.ratio
     );
-    canvasInfo.value.tagheight = Math.round(
-      canvasInfo.value.tagwidth / store.imgInfo.ratio
-    );
+    // canvasInfo.value.tagheight = Math.round(
+    //   canvasInfo.value.tagwidth / store.imgInfo.ratio
+    // );
     store.imgInfo.is_kuan = true;
   } else {
     canvasInfo.value.height = canvasInfo.value.tagheight;
     canvasInfo.value.width = Math.round(
       canvasInfo.value.height * store.imgInfo.ratio
     );
-    canvasInfo.value.tagwidth = Math.round(
-      canvasInfo.value.tagheight * store.imgInfo.ratio
-    );
+    // canvasInfo.value.tagwidth = Math.round(
+    //   canvasInfo.value.tagheight * store.imgInfo.ratio
+    // );
     store.imgInfo.is_kuan = false;
   }
-  if (typeof callback === 'function') {
-    console.log("进入了callback");
-    setTimeout(() => {
-      console.log("进入了setTimeout");
-      // callback()
-    }, 100)
-      ;
-  }
-};
 
-const drawImage = () => {
+  console.log("canvas 设置完成,canvasInfo:", canvasInfo.value);
   const query = uni.createSelectorQuery();
   query
     .select('#myCanvas')
@@ -69,6 +62,26 @@ const drawImage = () => {
       size: true,
     })
     .exec((res) => {
+      console.log("res:", res);
+    }
+    );
+
+};
+
+
+
+
+const drawImage = () => {
+  console.log("执行了drawImageddddddd");
+  const query = uni.createSelectorQuery();
+  query
+    .select('#myCanvas')
+    .fields({
+      node: true,
+      size: true,
+    })
+    .exec((res) => {
+      console.log("res:", res);
       const canvas = res[0].node;
       if (canvas) {
         ctx.value = canvas.getContext('2d');
@@ -77,7 +90,6 @@ const drawImage = () => {
 
         const img = canvas.createImage();
         img.src = imgInfo.value.url;
-
         img.onload = () => {
           ctx.value.drawImage(
             img,
@@ -111,19 +123,23 @@ const drawImage = () => {
 };
 
 
-const fin = () => {
-  console.log("执行了fin");
-  // setCanvas();
-  // drawImage();
-}
-watch(store, () => {
-  console.log('1', store.imgInfo.url);
-  setCanvas(drawImage);
-  // setTimeout(() => {
-  //   setCanvas(() => {
-  //     console.log('2222222222');
-  //   })
-  // }, 100)
+// watch(canvasInfo, () => {
+//   console.log("watch:");
+//   setCanvas(drawImage);
+// })
+
+
+// drawImage
+// setTimeout(() => {
+//   setCanvas(() => {
+//     console.log('2222222222');
+//   })
+// }, 100)
+// })
+defineExpose({
+  canvasInfo,
+  setCanvas,
+  drawImage,
 })
 
 </script>

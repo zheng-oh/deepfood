@@ -1,1 +1,18 @@
-"use strict";const e=require("../../common/vendor.js"),r=require("../../api/store.js"),t={__name:"db",setup(o){return(s,c)=>({a:e.t(e.unref(r.store).count),b:e.o(_=>e.unref(r.store).increment())})}},n=e._export_sfc(t,[["__file","C:/Users/zxing/Desktop/pickercolor/pages/db/db.vue"]]);wx.createPage(n);
+"use strict";
+const common_vendor = require("../../common/vendor.js");
+const stores_img = require("../../stores/img.js");
+const _sfc_main = {
+  __name: "db",
+  setup(__props) {
+    const store = stores_img.useImgStore();
+    return (_ctx, _cache) => {
+      return {
+        a: common_vendor.t(common_vendor.unref(store).count),
+        b: common_vendor.o(($event) => common_vendor.unref(store).increment()),
+        c: common_vendor.t(common_vendor.unref(store).imgInfo.url)
+      };
+    };
+  }
+};
+const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["__file", "/Users/xingzheng/Desktop/pickercolor/pages/db/db.vue"]]);
+wx.createPage(MiniProgramPage);

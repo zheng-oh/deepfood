@@ -13,25 +13,12 @@ import {
 	defineExpose,
 } from 'vue'
 
-const imgInfo = ref({
-	width: 0,
-	height: 0,
+import { useImgStore } from '@/stores/img'
 
-	url: '',
-	data: [],
-	ratio: 1,
-	is_kuan: false,
-});
-const canvasInfo = ref({
-	tagwidth_source: 750,
-	tagheight_source: 1000,
-	tagwidth: 0,
-	tagheight: 0,
-	width: 0,
-	height: 0,
-});
+const store = useImgStore()
+const imgInfo = store.imgInfo
+
 const drp = ref(0);
-
 
 const addImage = () => {
 	uni.chooseImage({
@@ -40,36 +27,23 @@ const addImage = () => {
 		sourceType: ['album', 'camera'],
 		success: (res) => {
 			const tempFilePaths = res.tempFilePaths;
-			imgInfo.value.url = tempFilePaths[0];
+			imgInfo.url = tempFilePaths[0];
 			uni.getImageInfo({
 				src: tempFilePaths[0],
 				success: (res) => {
-					imgInfo.value.url = res.path;
-					imgInfo.value.width = res.width;
-					imgInfo.value.height = res.height;
-					canvasInfo.value.tagwidth = canvasInfo.value.tagwidth_source;
-					canvasInfo.value.tagheight = canvasInfo.value.tagheight_source;
-					// setTimeout(() => {
-					// 	setCanvas(() => {
-					// 		console.log("回掉打印:");
-					// 	})
-					// }, 100)
-					// setTimeout(() => {
-					// 	setCanvas(() => {
-					// 		drawImage();
-					// 	});
-					// }, 100);
+					imgInfo.url = res.path;
+					imgInfo.width = res.width;
+					imgInfo.height = res.height;
+					imgInfo.ratio = imgInfo.width / imgInfo.height;
 					drp.value = uni.getSystemInfoSync().pixelRatio;
-					console.log("imginfo:", imgInfo.value)
+					console.log("子组件imgInfo:", imgInfo);
+
 				},
 			});
 		},
 	});
 };
 
-defineExpose({
-	imgInfo,
-});
 </script>
 
 <style>

@@ -1,1 +1,110 @@
-"use strict";const a=require("../common/vendor.js"),t=require("../api/store.js"),l={__name:"DrawImg",setup(c){const e=a.ref({tagwidth_source:750,tagheight_source:1e3,tagwidth:0,tagheight:0,width:0,height:0}),h=i=>{if(t.store.imgInfo.url==="")return;console.log("执行了DrawImg:",t.store.imgInfo.url),e.value.tagwidth=e.value.tagwidth_source,e.value.tagheight=e.value.tagheight_source,t.store.imgInfo.ratio=t.store.imgInfo.width/t.store.imgInfo.height;const n=e.value.tagwidth/e.value.tagheight;t.store.imgInfo.ratio>n?(e.value.width=a.index.getSystemInfoSync().screenWidth,e.value.height=Math.round(e.value.width/t.store.imgInfo.ratio),e.value.tagheight=Math.round(e.value.tagwidth/t.store.imgInfo.ratio),t.store.imgInfo.is_kuan=!0):(e.value.height=e.value.tagheight,e.value.width=Math.round(e.value.height*t.store.imgInfo.ratio),e.value.tagwidth=Math.round(e.value.tagheight*t.store.imgInfo.ratio),t.store.imgInfo.is_kuan=!1),typeof i=="function"&&(console.log("进入了callback"),setTimeout(()=>{console.log("进入了setTimeout")},100))},u=()=>{a.index.createSelectorQuery().select("#myCanvas").fields({node:!0,size:!0}).exec(n=>{const o=n[0].node;if(o){ctx.value=o.getContext("2d"),o.width=e.value.width*drp.value,o.height=e.value.height*drp.value;const r=o.createImage();r.src=imgInfo.value.url,r.onload=()=>{ctx.value.drawImage(r,0,0,o.width,o.height);const g=ctx.value.getImageData(0,0,o.width,o.height);imgInfo.value.data=g,imgInfo.value.is_kuan?(touchInfo.value.y_ratio=1,touchInfo.value.x_ratio=1):(touchInfo.value.y_ratio=e.value.height/Math.max(n[0].height,n[0].width),touchInfo.value.x_ratio=touchInfo.value.y_ratio)}}else console.error("Canvas element not found.")})};return a.watch(t.store,()=>{console.log("1",t.store.imgInfo.url),h(u)}),(i,n)=>a.e({a:a.unref(t.store).imgInfo.url},a.unref(t.store).imgInfo.url?{b:a.o((...o)=>i.handleTouchStart&&i.handleTouchStart(...o)),c:a.o((...o)=>i.handleTouchMove&&i.handleTouchMove(...o)),d:a.o((...o)=>i.handleTouchEnd&&i.handleTouchEnd(...o)),e:e.value.tagwidth+"rpx",f:e.value.tagheight+"rpx"}:{})}},s=a._export_sfc(l,[["__file","C:/Users/zxing/Desktop/pickercolor/components/DrawImg.vue"]]);wx.createComponent(s);
+"use strict";
+const common_vendor = require("../common/vendor.js");
+const stores_img = require("../stores/img.js");
+const _sfc_main = {
+  __name: "DrawImg",
+  setup(__props, { expose }) {
+    const canvasInfo = common_vendor.ref({
+      tagwidth_source: 750,
+      tagheight_source: 750,
+      tagwidth: 750,
+      tagheight: 750,
+      width: 0,
+      height: 0
+    });
+    const store = stores_img.useImgStore();
+    store.imgInfo.url;
+    const setCanvas = () => {
+      console.log("进入setCanvas");
+      if (store.imgInfo.url === "") {
+        return;
+      }
+      console.log("执行了setCanvas:", store.imgInfo.url);
+      const canvasRatio = canvasInfo.value.tagwidth / canvasInfo.value.tagheight;
+      if (store.imgInfo.ratio > canvasRatio) {
+        canvasInfo.value.width = common_vendor.index.getSystemInfoSync().screenWidth;
+        canvasInfo.value.height = Math.round(
+          canvasInfo.value.width / store.imgInfo.ratio
+        );
+        store.imgInfo.is_kuan = true;
+      } else {
+        canvasInfo.value.height = canvasInfo.value.tagheight;
+        canvasInfo.value.width = Math.round(
+          canvasInfo.value.height * store.imgInfo.ratio
+        );
+        store.imgInfo.is_kuan = false;
+      }
+      console.log("canvas 设置完成,canvasInfo:", canvasInfo.value);
+      const query = common_vendor.index.createSelectorQuery();
+      query.select("#myCanvas").fields({
+        node: true,
+        size: true
+      }).exec(
+        (res) => {
+          console.log("res:", res);
+        }
+      );
+    };
+    const drawImage = () => {
+      console.log("执行了drawImageddddddd");
+      const query = common_vendor.index.createSelectorQuery();
+      query.select("#myCanvas").fields({
+        node: true,
+        size: true
+      }).exec((res) => {
+        console.log("res:", res);
+        const canvas = res[0].node;
+        if (canvas) {
+          ctx.value = canvas.getContext("2d");
+          canvas.width = canvasInfo.value.width * drp.value;
+          canvas.height = canvasInfo.value.height * drp.value;
+          const img = canvas.createImage();
+          img.src = imgInfo.value.url;
+          img.onload = () => {
+            ctx.value.drawImage(
+              img,
+              0,
+              0,
+              canvas.width,
+              canvas.height
+            );
+            const imageData = ctx.value.getImageData(
+              0,
+              0,
+              canvas.width,
+              canvas.height
+            );
+            imgInfo.value.data = imageData;
+            if (!imgInfo.value.is_kuan) {
+              touchInfo.value.y_ratio = canvasInfo.value.height / Math.max(res[0].height, res[0].width);
+              touchInfo.value.x_ratio = touchInfo.value.y_ratio;
+            } else {
+              touchInfo.value.y_ratio = 1;
+              touchInfo.value.x_ratio = 1;
+            }
+          };
+        } else {
+          console.error("Canvas element not found.");
+        }
+      });
+    };
+    expose({
+      canvasInfo,
+      setCanvas,
+      drawImage
+    });
+    return (_ctx, _cache) => {
+      return common_vendor.e({
+        a: common_vendor.unref(store).imgInfo.url
+      }, common_vendor.unref(store).imgInfo.url ? {
+        b: common_vendor.o((...args) => _ctx.handleTouchStart && _ctx.handleTouchStart(...args)),
+        c: common_vendor.o((...args) => _ctx.handleTouchMove && _ctx.handleTouchMove(...args)),
+        d: common_vendor.o((...args) => _ctx.handleTouchEnd && _ctx.handleTouchEnd(...args)),
+        e: canvasInfo.value.tagwidth + "rpx",
+        f: canvasInfo.value.tagheight + "rpx"
+      } : {});
+    };
+  }
+};
+const Component = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["__file", "/Users/xingzheng/Desktop/pickercolor/components/DrawImg.vue"]]);
+wx.createComponent(Component);

@@ -1,6 +1,6 @@
 <template>
 	<view>
-		<DrawImg></DrawImg>
+		<DrawImg ref="drawimg"></DrawImg>
 		<!-- <view style="display: flex; justify-content: center">
 			<canvas v-if="imgInfo.url" type="2d" id="myCanvas" canvas-id="myCanvas" @touchstart="handleTouchStart"
 				@touchmove="handleTouchMove" @touchend="handleTouchEnd" :style="{
@@ -51,12 +51,19 @@
 			<text class="large-text"> {{ rgb }}</text>
 			<button class="m-btn" @tap="addToDB">Save</button>
 		</view> -->
-		<AddImg ref="addimg"></AddImg>
+		<AddImg></AddImg>
 		<view>
 			<button @click="store.increment()">
-				From A: {{ store.count }}
+				From Aaaa: {{ store.count }}
 			</button>
+			Img Url: {{ store.imgInfo.url }}
+
 		</view>
+		<!-- <button @click="store.increment()">
+				From Aaaa: {{ store.count }}
+			</button> -->
+		<button @tap="callChildMethod">Call Child Method</button>
+
 	</view>
 </template>
 
@@ -65,19 +72,35 @@
 import {
 	ref,
 	onMounted,
-	onUpdated
+	onUpdated,
 } from 'vue'
-import {
-	store
-} from '@/api/store.js'
+// import {
+// 	store
+// } from '@/api/store.js'
+import { useImgStore } from '@/stores/img'
+
 import {
 	AddImg,
 } from '@/components/AddImg.vue'
 import { DrawImg } from '@/components/DrawImg.vue'
+import { storeToRefs } from 'pinia'
 
-const addimg = ref(null)
 
+const store = useImgStore()
+console.log("父组件store:", store);
+const drawimg = ref(null)
 
+// const { canvasInfo, setCanvas, drawImage } = inject();
+const callChildMethod = () => {
+	// drawimg.value.setCanvas()
+	drawimg.value.setCanvas()
+	drawimg.value.drawImage()
+	console.log("drawing finish:", store.imgInfo.url, store.imgInfo.is_kuan, store.imgInfo.ratio);
+
+}
+// const { imgInfo } = storeToRefs(store)
+// console.log("imgInfo:", imgInfo);
+// console.log("imgInfo:", imgInfo);
 // const ctx = ref(null);
 // const drp = ref(0);
 // const rgb = ref('');
@@ -316,7 +339,7 @@ onMounted(() => {
 
 onUpdated(() => {
 	console.log("onupdate");
-	console.log("open imgInfo:", addimg.value.imgInfo);
+	// console.log("open imgInfo:", addimg.value.imgInfo);
 	// console.log(imgInfo);;
 })
 

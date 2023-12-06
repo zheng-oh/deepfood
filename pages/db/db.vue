@@ -13,13 +13,16 @@
 			<button @click="store.increment()">
 				From A: {{ store.count }}
 			</button>
+			Img Url: {{ store.imgInfo.url }}
 		</view>
 	</view>
 </template>
   
 
 <script setup>
-import { store } from '@/api/store';
+import { useImgStore } from '@/stores/img'
+const store = useImgStore()
+
 </script>
 <style>
 .large-text {
