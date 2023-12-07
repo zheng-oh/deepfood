@@ -26,10 +26,7 @@ const _sfc_main = {
       }, 10);
     });
     common_vendor.watch([() => store.imgInfo.re_plot], (newcover) => {
-      console.log("newcover:", newcover);
       if (!store.cursorInfo.cover) {
-        console.log("清空:", store.canvasInfo.width, store.canvasInfo.height);
-        console.log("清空:", store.drp);
         store.ctxCursor.clearRect(0, 0, store.canvasInfo.width * store.drp, store.canvasInfo.height * store.drp);
       }
       store.drawCursor();
@@ -50,17 +47,7 @@ const _sfc_main = {
           squaresize: "40"
         })
       } : {}, {
-        k: common_vendor.unref(store).pickerColor.hexColor
-      }, common_vendor.unref(store).pickerColor.hexColor ? {
-        l: common_vendor.t(Math.round(common_vendor.unref(store).touchInfo.x)),
-        m: common_vendor.t(Math.round(common_vendor.unref(store).touchInfo.y))
-      } : {}, {
-        n: common_vendor.unref(store).pickerColor.hexColor
-      }, common_vendor.unref(store).pickerColor.hexColor ? {
-        o: common_vendor.t(Math.round(common_vendor.unref(store).cursorInfo.x)),
-        p: common_vendor.t(Math.round(common_vendor.unref(store).cursorInfo.y))
-      } : {}, {
-        q: common_vendor.t(Math.round(common_vendor.unref(store).cursorInfo.x / common_vendor.unref(store).imgInfo.data.width * common_vendor.unref(store).imgInfo.width))
+        k: common_vendor.t(common_vendor.unref(store).pickerColors.length)
       });
     };
   }

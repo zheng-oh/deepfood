@@ -50,6 +50,8 @@ export const useImgStore = defineStore('img', {
             hexColor: "",
         });
 
+        const pickerColors = ref([]);
+
         const drp = uni.getSystemInfoSync().pixelRatio;
         const ctxImg = ref(null);
         const ctxCursor = ref(null);
@@ -62,7 +64,8 @@ export const useImgStore = defineStore('img', {
             cursorInfo,
             ctxImg,
             ctxCursor,
-            pickerColor
+            pickerColor,
+            pickerColors
         };
     },
     // 也可以这样定义
@@ -76,7 +79,7 @@ export const useImgStore = defineStore('img', {
             this.imgInfo.url = '';
         },
         handleTouchStart(event) {
-            console.log("handleTouchStart");
+            // console.log("handleTouchStart");
             this.pickerColor.hexColor = "";
             const touch = event.touches[0];
             this.touchInfo.x = touch.x;

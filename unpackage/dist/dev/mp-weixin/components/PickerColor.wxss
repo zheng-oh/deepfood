@@ -9,3 +9,36 @@
   margin-right: 20rpx;
   /* 右侧空隙 */
 }
+.animated-button {
+  transition: opacity 0.5s ease-out;
+}
+.animated-button-enter-active,
+.animated-button-leave-active {
+  transition: opacity 0.5s;
+}
+.animated-button-enter,
+.animated-button-leave-to {
+  opacity: 0;
+}
+.plus-one {
+  position: absolute;
+  left: 90%;
+  /* transform: translateX(0%); */
+  font-size: 1.5rem;
+  color: green;
+  animation: bounce 1s ease-out;
+}
+@keyframes bounce {
+0% {
+    transform: translateY(-20px);
+    opacity: 1;
+}
+50% {
+    transform: translateY(-30px);
+    opacity: 1;
+}
+100% {
+    transform: translateY(-40px);
+    opacity: 0;
+}
+}

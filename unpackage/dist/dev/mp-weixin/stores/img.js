@@ -38,6 +38,7 @@ const useImgStore = common_vendor.defineStore("img", {
       rgb: `RGB(0, 0, 0)  Hex(#000000)`,
       hexColor: ""
     });
+    const pickerColors = common_vendor.ref([]);
     const drp = common_vendor.index.getSystemInfoSync().pixelRatio;
     const ctxImg = common_vendor.ref(null);
     const ctxCursor = common_vendor.ref(null);
@@ -49,7 +50,8 @@ const useImgStore = common_vendor.defineStore("img", {
       cursorInfo,
       ctxImg,
       ctxCursor,
-      pickerColor
+      pickerColor,
+      pickerColors
     };
   },
   // 也可以这样定义
@@ -60,7 +62,6 @@ const useImgStore = common_vendor.defineStore("img", {
       this.imgInfo.url = "";
     },
     handleTouchStart(event) {
-      console.log("handleTouchStart");
       this.pickerColor.hexColor = "";
       const touch = event.touches[0];
       this.touchInfo.x = touch.x;

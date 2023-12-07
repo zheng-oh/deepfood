@@ -5,7 +5,7 @@ import { useImgStore } from '../stores/img';
 
 const drawImg = () => {
     const store = useImgStore();
-    console.log("canvaswidth, canvasheight:", store.canvasInfo.width, store.canvasInfo.height);
+    // console.log("canvaswidth, canvasheight:", store.canvasInfo.width, store.canvasInfo.height);
     // const ctx = ref(null);
     const query = uni.createSelectorQuery();
     query
@@ -15,7 +15,7 @@ const drawImg = () => {
             size: true,
         })
         .exec((res) => {
-            console.log("res:", res);
+            // console.log("res:", res);
             const canvas = res[0].node;
 
             if (canvas) {
@@ -30,7 +30,6 @@ const drawImg = () => {
                 img.src = store.imgInfo.url;
 
                 img.onload = () => {
-                    console.log();
                     store.ctxImg.drawImage(
                         img,
                         0,
@@ -67,7 +66,7 @@ const drawImg = () => {
                             size: true,
                         })
                         .exec((res) => {
-                            console.log("res:", res);
+                            // console.log("res:", res);
                             const canvas2 = res[0].node;
 
                             if (canvas2) {
@@ -75,7 +74,7 @@ const drawImg = () => {
                                 store.ctxCursor = canvas2.getContext("2d");
                                 canvas2.width = store.canvasInfo.width * store.drp;
                                 canvas2.height = store.canvasInfo.height * store.drp;
-                                console.log("获取ctx cursor");
+                                // console.log("获取ctx cursor");
                             }
                         });
                     // store.drawCursor()

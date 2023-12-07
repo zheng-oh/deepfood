@@ -25,11 +25,7 @@
 		<PickerColor v-if=store.imgInfo.url squaresize="40"></PickerColor>
 
 		<AddImg></AddImg>
-		<text v-if="store.pickerColor.hexColor"> x:{{ Math.round(store.touchInfo.x) }} y: {{ Math.round(store.touchInfo.y)
-		}}</text>
-		<text v-if="store.pickerColor.hexColor"> x:{{ Math.round(store.cursorInfo.x) }} y: {{ Math.round(store.cursorInfo.y)
-		}}</text>
-		{{ Math.round(store.cursorInfo.x / store.imgInfo.data.width * store.imgInfo.width) }}
+		{{ store.pickerColors.length }}
 	</view>
 </template>
 
@@ -73,13 +69,9 @@ watch(() => store.imgInfo.url, (newurl) => {
 
 
 watch([() => store.imgInfo.re_plot], (newcover) => {
-	console.log("newcover:", newcover);
 	if (!store.cursorInfo.cover) {
-		console.log("清空:", store.canvasInfo.width, store.canvasInfo.height);
-		console.log("清空:", store.drp);
 		store.ctxCursor.clearRect(0, 0, store.canvasInfo.width * store.drp, store.canvasInfo.height * store.drp);
 	}
-
 	store.drawCursor()
 })
 

@@ -3,13 +3,11 @@ const common_vendor = require("../common/vendor.js");
 const stores_img = require("../stores/img.js");
 const drawImg = () => {
   const store = stores_img.useImgStore();
-  console.log("canvaswidth, canvasheight:", store.canvasInfo.width, store.canvasInfo.height);
   const query = common_vendor.index.createSelectorQuery();
   query.select("#myCanvas").fields({
     node: true,
     size: true
   }).exec((res) => {
-    console.log("res:", res);
     const canvas = res[0].node;
     if (canvas) {
       store.ctxImg = canvas.getContext("2d");
@@ -18,7 +16,6 @@ const drawImg = () => {
       const img = canvas.createImage();
       img.src = store.imgInfo.url;
       img.onload = () => {
-        console.log();
         store.ctxImg.drawImage(
           img,
           0,
@@ -46,13 +43,11 @@ const drawImg = () => {
           node: true,
           size: true
         }).exec((res2) => {
-          console.log("res:", res2);
           const canvas2 = res2[0].node;
           if (canvas2) {
             store.ctxCursor = canvas2.getContext("2d");
             canvas2.width = store.canvasInfo.width * store.drp;
             canvas2.height = store.canvasInfo.height * store.drp;
-            console.log("获取ctx cursor");
           }
         });
       };
