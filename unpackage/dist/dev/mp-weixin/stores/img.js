@@ -8,7 +8,12 @@ const useImgStore = common_vendor.defineStore("img", {
       url: "",
       data: [],
       ratio: 1,
-      is_kuan: false
+      is_kuan: false,
+      re_plot: false
+    });
+    const canvasInfo = common_vendor.ref({
+      width: 0,
+      height: 0
     });
     const touchInfo = common_vendor.ref({
       x: 0,
@@ -22,7 +27,8 @@ const useImgStore = common_vendor.defineStore("img", {
       y: 100,
       radius: 60,
       lineWidth: 20,
-      color: "red"
+      color: "red",
+      cover: true
     });
     const pickerColor = common_vendor.ref({
       red: 0,
@@ -31,21 +37,20 @@ const useImgStore = common_vendor.defineStore("img", {
       rgb: `RGB(0, 0, 0)  Hex(#000000)`,
       hexColor: ""
     });
-    const ctx = common_vendor.ref(null);
-    return { imgInfo, touchInfo, cursorInfo, ctx, pickerColor };
+    const drp = common_vendor.index.getSystemInfoSync().pixelRatio;
+    const ctxImg = common_vendor.ref(null);
+    const ctxCursor = common_vendor.ref(null);
+    return { drp, canvasInfo, imgInfo, touchInfo, cursorInfo, ctxImg, ctxCursor, pickerColor };
   },
   // 也可以这样定义
   // state: () => ({ count: 0 })
-  getters: {
-    drp() {
-      return common_vendor.index.getSystemInfoSync().pixelRatio;
-    }
-  },
+  getters: {},
   actions: {
     deleteImage() {
       this.imgInfo.url = "";
     },
     handleTouchStart(event) {
+      console.log("handleTouchStart");
       this.pickerColor.hexColor = "";
       const touch = event.touches[0];
       this.touchInfo.x = touch.x;
@@ -68,26 +73,27 @@ const useImgStore = common_vendor.defineStore("img", {
       this.touchInfo.isDragging = false;
     },
     drawCursor() {
-      this.ctx.beginPath();
-      this.ctx.lineWidth = this.cursorInfo.lineWidth;
-      this.ctx.moveTo(
+      console.log("drawCursor");
+      this.ctxCursor.beginPath();
+      this.ctxCursor.lineWidth = this.cursorInfo.lineWidth;
+      this.ctxCursor.moveTo(
         this.cursorInfo.x,
         this.cursorInfo.y - this.cursorInfo.radius
       );
-      this.ctx.lineTo(
+      this.ctxCursor.lineTo(
         this.cursorInfo.x,
         this.cursorInfo.y + this.cursorInfo.radius
       );
-      this.ctx.moveTo(
+      this.ctxCursor.moveTo(
         this.cursorInfo.x - this.cursorInfo.radius,
         this.cursorInfo.y
       );
-      this.ctx.lineTo(
+      this.ctxCursor.lineTo(
         this.cursorInfo.x + this.cursorInfo.radius,
         this.cursorInfo.y
       );
-      this.ctx.strokeStyle = this.cursorInfo.color;
-      this.ctx.stroke();
+      this.ctxCursor.strokeStyle = this.cursorInfo.color;
+      this.ctxCursor.stroke();
     },
     getImageRGB() {
       const x = Math.round(this.cursorInfo.x);

@@ -2,13 +2,11 @@ import { useImgStore } from '../stores/img';
 
 // const ctx = ref(null);
 // const drp = uni.getSystemInfoSync().pixelRatio
-// const store = useImgStore();
 
-const drawImg = (canvaswidth, canvasheight) => {
-    console.log("canvaswidth, canvasheight:", canvaswidth.value, canvasheight.value);
-    // const ctx = ref(null);
-    const drp = uni.getSystemInfoSync().pixelRatio
+const drawImg = () => {
     const store = useImgStore();
+    console.log("canvaswidth, canvasheight:", store.canvasInfo.width, store.canvasInfo.height);
+    // const ctx = ref(null);
     const query = uni.createSelectorQuery();
     query
         .select('#myCanvas')
@@ -22,10 +20,10 @@ const drawImg = (canvaswidth, canvasheight) => {
 
             if (canvas) {
                 // console.log("<canvas> size:", res[0].width, res[0].height);
-                store.ctx = canvas.getContext("2d");
+                store.ctxImg = canvas.getContext("2d");
                 // console.log(canvaswidth.value, canvasheight.value);
-                canvas.width = canvaswidth.value * drp;
-                canvas.height = canvasheight.value * drp;
+                canvas.width = store.canvasInfo.width * store.drp;
+                canvas.height = store.canvasInfo.height * store.drp;
                 // console.log("canvas w;h:", canvas.width, canvas.height);
 
                 const img = canvas.createImage();
@@ -33,7 +31,7 @@ const drawImg = (canvaswidth, canvasheight) => {
 
                 img.onload = () => {
                     console.log();
-                    store.ctx.drawImage(
+                    store.ctxImg.drawImage(
                         img,
                         0,
                         0,
@@ -41,7 +39,7 @@ const drawImg = (canvaswidth, canvasheight) => {
                         canvas.height
                     );
 
-                    const imageData = store.ctx.getImageData(
+                    const imageData = store.ctxImg.getImageData(
                         0,
                         0,
                         canvas.width,
@@ -61,6 +59,27 @@ const drawImg = (canvaswidth, canvasheight) => {
                         store.touchInfo.y_ratio = canvas.height / res[0].height;
                     }
                     store.pickerColor.hexColor = "";
+                    const query2 = uni.createSelectorQuery();
+                    query2
+                        .select('#myCursor')
+                        .fields({
+                            node: true,
+                            size: true,
+                        })
+                        .exec((res) => {
+                            console.log("res:", res);
+                            const canvas2 = res[0].node;
+
+                            if (canvas2) {
+                                // console.log("<canvas> size:", res[0].width, res[0].height);
+                                store.ctxCursor = canvas2.getContext("2d");
+                                canvas2.width = store.canvasInfo.width * store.drp;
+                                canvas2.height = store.canvasInfo.height * store.drp;
+                                console.log("获取ctx cursor");
+                            }
+                        });
+                    // store.drawCursor()
+
 
                 };
             } else {

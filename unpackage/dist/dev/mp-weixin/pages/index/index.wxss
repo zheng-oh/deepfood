@@ -1,4 +1,12 @@
 
+#myCanvas {
+	position: absolute;
+	z-index: 1;
+}
+#myCursor {
+	position: relative;
+	z-index: 200;
+}
 .m-btn {
 	font-size: 25rpx;
 	/* background-color: #6a717b; */

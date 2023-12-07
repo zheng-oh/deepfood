@@ -17,60 +17,67 @@ const _sfc_main = {
     });
     common_vendor.onReady(() => {
       console.log("onready");
-    });
-    const canvaswidth = common_vendor.computed(() => {
-      if (store.imgInfo.is_kuan) {
-        return Math.round(
-          canvasInfo.value.tagwidth
-        );
-      } else {
-        return Math.round(
-          canvasInfo.value.tagheight * store.imgInfo.ratio
-        );
-      }
-    });
-    const canvasheight = common_vendor.computed(() => {
-      if (store.imgInfo.is_kuan) {
-        return Math.round(
-          canvasInfo.value.tagwidth / store.imgInfo.ratio
-        );
-      } else {
-        return canvasInfo.value.tagheight;
-      }
+      store.canvasInfo.width = canvasInfo.value.tagwidth;
+      store.canvasInfo.height = canvasInfo.value.tagheight;
     });
     store.imgInfo.is_kuan = common_vendor.computed(() => {
       return store.imgInfo.ratio > canvasInfo.value.tagwidth / canvasInfo.value.tagheight;
     });
     common_vendor.watch(() => store.imgInfo.url, (newurl) => {
       console.log("newurl:", newurl);
+      if (store.imgInfo.is_kuan) {
+        store.canvasInfo.width = Math.round(
+          canvasInfo.value.tagwidth
+        );
+        store.canvasInfo.height = Math.round(
+          canvasInfo.value.tagwidth / store.imgInfo.ratio
+        );
+      } else {
+        store.canvasInfo.height = canvasInfo.value.tagheight;
+        store.canvasInfo.width = Math.round(
+          canvasInfo.value.tagheight * store.imgInfo.ratio
+        );
+      }
       setTimeout(() => {
-        api_drawimg.drawImg(canvaswidth, canvasheight);
+        api_drawimg.drawImg();
       }, 10);
+    });
+    common_vendor.watch([() => store.imgInfo.re_plot], (newcover) => {
+      console.log("newcover:", newcover);
+      if (!store.cursorInfo.cover) {
+        console.log("清空:", store.canvasInfo.width, store.canvasInfo.height);
+        console.log("清空:", store.drp);
+        store.ctxCursor.clearRect(0, 0, store.canvasInfo.width * store.drp, store.canvasInfo.height * store.drp);
+      }
+      store.drawCursor();
     });
     return (_ctx, _cache) => {
       return common_vendor.e({
         a: common_vendor.o((...args) => common_vendor.unref(store).handleTouchStart && common_vendor.unref(store).handleTouchStart(...args)),
         b: common_vendor.o((...args) => common_vendor.unref(store).handleTouchMove && common_vendor.unref(store).handleTouchMove(...args)),
         c: common_vendor.o((...args) => common_vendor.unref(store).handleTouchEnd && common_vendor.unref(store).handleTouchEnd(...args)),
-        d: common_vendor.unref(canvaswidth) + "rpx",
-        e: common_vendor.unref(canvasheight) + "rpx",
-        f: common_vendor.unref(store).pickerColor.hexColor && common_vendor.unref(store).imgInfo.url
-      }, common_vendor.unref(store).pickerColor.hexColor && common_vendor.unref(store).imgInfo.url ? {
-        g: common_vendor.p({
+        d: common_vendor.unref(store).canvasInfo.width + "rpx",
+        e: common_vendor.unref(store).canvasInfo.height + "rpx",
+        f: common_vendor.unref(store).imgInfo.url,
+        g: common_vendor.unref(store).canvasInfo.width + "rpx",
+        h: common_vendor.unref(store).canvasInfo.height + "rpx",
+        i: common_vendor.unref(store).imgInfo.url
+      }, common_vendor.unref(store).imgInfo.url ? {
+        j: common_vendor.p({
           squaresize: "40"
         })
       } : {}, {
-        h: common_vendor.unref(store).pickerColor.hexColor
-      }, common_vendor.unref(store).pickerColor.hexColor ? {
-        i: common_vendor.t(Math.round(common_vendor.unref(store).touchInfo.x)),
-        j: common_vendor.t(Math.round(common_vendor.unref(store).touchInfo.y))
-      } : {}, {
         k: common_vendor.unref(store).pickerColor.hexColor
       }, common_vendor.unref(store).pickerColor.hexColor ? {
-        l: common_vendor.t(Math.round(common_vendor.unref(store).cursorInfo.x)),
-        m: common_vendor.t(Math.round(common_vendor.unref(store).cursorInfo.y))
+        l: common_vendor.t(Math.round(common_vendor.unref(store).touchInfo.x)),
+        m: common_vendor.t(Math.round(common_vendor.unref(store).touchInfo.y))
       } : {}, {
-        n: common_vendor.t(Math.round(common_vendor.unref(store).cursorInfo.x / common_vendor.unref(store).imgInfo.data.width * common_vendor.unref(store).imgInfo.width))
+        n: common_vendor.unref(store).pickerColor.hexColor
+      }, common_vendor.unref(store).pickerColor.hexColor ? {
+        o: common_vendor.t(Math.round(common_vendor.unref(store).cursorInfo.x)),
+        p: common_vendor.t(Math.round(common_vendor.unref(store).cursorInfo.y))
+      } : {}, {
+        q: common_vendor.t(Math.round(common_vendor.unref(store).cursorInfo.x / common_vendor.unref(store).imgInfo.data.width * common_vendor.unref(store).imgInfo.width))
       });
     };
   }

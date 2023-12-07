@@ -12,10 +12,11 @@
   </view>
   <slot></slot>
   <view>
-    <slider :value=sliderx @change="sliderChange" min="0" :max=store.imgInfo.width show-value />
-    <slider :value=slidery @change="sliderChange" min="0" :max=store.imgInfo.height show-value />
+    <slider :value=sliderx @change="sliderChangex" min="0" :max=store.imgInfo.width show-value />
+    <slider :value=slidery @change="sliderChangey" min="0" :max=store.imgInfo.height show-value />
   </view>
   <view class="pickerview">
+
     <button v-for="(color, index) in cursorColors" :key="index" @tap="setCursorColor(color.color)" :style="{
       height: '40rpx',
       color: color.color,
@@ -23,6 +24,7 @@
       'background-color': color.color,
     }">
     </button>
+    <switch :checked="store.cursorInfo.cover" @change="switch1Change" color="#FFCC33" style="transform:scale(0.7)" />
 
   </view>
 </template>
@@ -76,11 +78,26 @@ const slidery = computed(() => {
   return Math.round(store.cursorInfo.y / store.imgInfo.data.height * store.imgInfo.height)
 })
 
-
-const sliderChange = (e) => {
-  console.log('sliderChange', e);
+const sliderChangex = (e) => {
+  console.log('sliderChangex', e);
   store.cursorInfo.x = e.detail.value / store.imgInfo.width * store.imgInfo.data.width
+  store.imgInfo.re_plot = !store.imgInfo.re_plot
+  store.getImageRGB()
+  store.drawCursor()
+}
+
+const sliderChangey = (e) => {
+  console.log('sliderChangey', e);
   store.cursorInfo.y = e.detail.value / store.imgInfo.height * store.imgInfo.data.height
+  store.imgInfo.re_plot = !store.imgInfo.re_plot
+  store.getImageRGB()
+  store.drawCursor()
+}
+
+const switch1Change = (e) => {
+  console.log('switch1Change', e);
+  store.cursorInfo.cover = e.detail.value
+  store.drawCursor()
 }
 
 </script>
