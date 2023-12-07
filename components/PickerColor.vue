@@ -1,25 +1,87 @@
 <template>
-  <view v-if="store.pickerColor.hexColor && store.imgInfo.url" class="pickerview">
-    <!-- <view class="pickerview" :style="{ border: `6rpx solid ` + this.hexColor }"> -->
+  <view class="pickerview" :style="{ border: `6rpx solid ` + store.pickerColor.hexColor }">
     <view :style="{
-      width: squareSize + 'px',
-      height: squareSize + 'px',
+      width: squareSize,
+      height: squareSize,
       backgroundColor: store.pickerColor.hexColor,
       marginLeft: '10rpx',
       marginRight: '10rpx',
     }"></view>
-    <text class="large-text"> {{ store.pickerColor.rgb }} {{ squareSize }}</text>
+    <text class="large-text"> {{ store.pickerColor.rgb }}</text>
     <button class="m-btn" @tap="addToDB">Save</button>
+  </view>
+  <slot></slot>
+  <view>
+    <slider :value=sliderx @change="sliderChange" min="0" :max=store.imgInfo.width show-value />
+    <slider :value=slidery @change="sliderChange" min="0" :max=store.imgInfo.height show-value />
+  </view>
+  <view class="pickerview">
+    <button v-for="(color, index) in cursorColors" :key="index" @tap="setCursorColor(color.color)" :style="{
+      height: '40rpx',
+      color: color.color,
+      border: store.cursorInfo.color === color.color ? '3px solid black' : '1px solid black',
+      'background-color': color.color,
+    }">
+    </button>
+
   </view>
 </template>
 
 
 <script setup>
 import { useImgStore } from '@/stores/img'
+import { computed } from 'vue'
 const store = useImgStore()
-const squareSize = defineProps(['square-size'])
+const props = defineProps(['squaresize'])
+
+const squareSize = computed(() => {
+  console.log('squareSize', props.squaresize);
+  return `${props.squaresize}px`
+})
 
 
+const cursorColors = [
+  {
+    color: 'red',
+    border: '3px solid black',
+    backgroundColor: 'white',
+  },
+  {
+    color: 'black',
+    border: '3px solid black',
+    backgroundColor: 'white',
+  },
+  {
+    color: 'white',
+    border: '3px solid black',
+    backgroundColor: 'grey',
+  },
+  {
+    color: 'blue',
+    border: '3px solid black',
+    backgroundColor: 'white',
+  }
+]
+
+const setCursorColor = (color) => {
+  store.cursorInfo.color = color
+}
+
+const sliderx = computed(() => {
+  return Math.round(store.cursorInfo.x / store.imgInfo.data.width * store.imgInfo.width)
+})
+
+
+const slidery = computed(() => {
+  return Math.round(store.cursorInfo.y / store.imgInfo.data.height * store.imgInfo.height)
+})
+
+
+const sliderChange = (e) => {
+  console.log('sliderChange', e);
+  store.cursorInfo.x = e.detail.value / store.imgInfo.width * store.imgInfo.data.width
+  store.cursorInfo.y = e.detail.value / store.imgInfo.height * store.imgInfo.data.height
+}
 
 </script>
 

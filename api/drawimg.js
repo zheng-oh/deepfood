@@ -1,7 +1,3 @@
-import {
-    ref,
-    computed
-} from 'vue'
 import { useImgStore } from '../stores/img';
 
 // const ctx = ref(null);
@@ -9,7 +5,7 @@ import { useImgStore } from '../stores/img';
 // const store = useImgStore();
 
 const drawImg = (canvaswidth, canvasheight) => {
-    console.log("执行了drawImageddddddd");
+    console.log("canvaswidth, canvasheight:", canvaswidth.value, canvasheight.value);
     // const ctx = ref(null);
     const drp = uni.getSystemInfoSync().pixelRatio
     const store = useImgStore();
@@ -25,13 +21,12 @@ const drawImg = (canvaswidth, canvasheight) => {
             const canvas = res[0].node;
 
             if (canvas) {
-                console.log("<canvas> size:", res[0].width, res[0].height);
+                // console.log("<canvas> size:", res[0].width, res[0].height);
                 store.ctx = canvas.getContext("2d");
-                console.log(canvaswidth.value, canvasheight.value);
-                console.log(drp);
+                // console.log(canvaswidth.value, canvasheight.value);
                 canvas.width = canvaswidth.value * drp;
                 canvas.height = canvasheight.value * drp;
-                console.log("canvas w;h:", canvas.width, canvas.height);
+                // console.log("canvas w;h:", canvas.width, canvas.height);
 
                 const img = canvas.createImage();
                 img.src = store.imgInfo.url;
@@ -53,9 +48,9 @@ const drawImg = (canvaswidth, canvasheight) => {
                         canvas.height
                     );
                     store.imgInfo.data = imageData;
-                    console.log("imageData:", imageData);
-                    console.log('kkk:', canvas.height, Math.max(res[0].height, res[0].width));
-                    console.log("store.imgInfo.data:", store.imgInfo.data);
+                    // console.log("imageData:", imageData);
+                    // console.log('kkk:', canvas.height, Math.max(res[0].height, res[0].width));
+                    // console.log("store.imgInfo.data:", store.imgInfo.data);
                     if (!store.imgInfo.is_kuan) {
                         store.touchInfo.y_ratio =
                             canvas.height / res[0].height;
@@ -65,6 +60,8 @@ const drawImg = (canvaswidth, canvasheight) => {
 
                         store.touchInfo.y_ratio = canvas.height / res[0].height;
                     }
+                    store.pickerColor.hexColor = "";
+
                 };
             } else {
                 console.error('Canvas element not found.');

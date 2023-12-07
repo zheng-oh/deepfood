@@ -35,8 +35,8 @@ const addImage = () => {
 					imgInfo.height = res.height;
 					imgInfo.ratio = imgInfo.width / imgInfo.height;
 					drp.value = uni.getSystemInfoSync().pixelRatio;
-					console.log("子组件imgInfo:", imgInfo);
-
+					console.log('imgInfo', imgInfo);
+					console.log('drp', drp.value);
 				},
 			});
 		},

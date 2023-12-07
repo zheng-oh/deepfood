@@ -10,57 +10,14 @@
 				}"></canvas>
 		</view>
 
-		<!-- <view style="display: flex; justify-content: center">
-			<canvas v-if="imgInfo.url" type="2d" id="myCanvas" canvas-id="myCanvas" @touchstart="handleTouchStart"
-				@touchmove="handleTouchMove" @touchend="handleTouchEnd" :style="{
-					width: canvasInfo.tagwidth + 'rpx',
-					height: canvasInfo.tagheight + 'rpx',
-				}"></canvas>
-		</view> -->
-		<!-- 	<view class="pickerview" v-if="imgInfo.url" style="display: flex; flex-direction: row">
-			<text class="large-text">Cursor Select</text>
-			<button @tap="setCursorColor('red')" :style="{
-				color: 'red',
-				border:
-					cursorInfo.color === 'red' ? '3px solid black' : '1px solid black',
-				'background-color': cursorInfo.color === 'red' ? 'white' : 'grey',
-			}">
-				十
-			</button>
-			<button @tap="setCursorColor('black')" :style="{
-				color: 'black',
-				border:
-					cursorInfo.color === 'black'
-						? '3px solid black'
-						: '1px solid black',
-				'background-color': cursorInfo.color === 'black' ? 'white' : 'grey',
-			}">
-				十
-			</button>
-			<button @tap="setCursorColor('white')" :style="{
-				color: 'white',
-				border:
-					cursorInfo.color === 'white'
-						? '3px solid black'
-						: '1px solid black',
-				'background-color': 'grey',
-			}">
-				十
-			</button>
-		</view> -->
+		<PickerColor v-if="store.pickerColor.hexColor && store.imgInfo.url" squaresize="40"></PickerColor>
+
 		<AddImg></AddImg>
-		<PickerColor squaresize="20"></PickerColor>
-		<view>
-			<button @click="store.increment()">
-				From Aaaa: {{ store.count }}
-			</button>
-		</view>
-		<!-- <button @click="store.increment()">
-				From Aaaa: {{ store.count }}
-			</button> -->
-		<view>{{ store.imgInfo }}</view>
-
-
+		<text v-if="store.pickerColor.hexColor"> x:{{ Math.round(store.touchInfo.x) }} y: {{ Math.round(store.touchInfo.y)
+		}}</text>
+		<text v-if="store.pickerColor.hexColor"> x:{{ Math.round(store.cursorInfo.x) }} y: {{ Math.round(store.cursorInfo.y)
+		}}</text>
+		{{ Math.round(store.cursorInfo.x / store.imgInfo.data.width * store.imgInfo.width) }}
 	</view>
 </template>
 
@@ -69,10 +26,7 @@
 import {
 	ref,
 	watch,
-	onMounted,
 	computed,
-
-	onUpdated,
 } from 'vue'
 // import {
 // 	store
@@ -81,12 +35,10 @@ import { useImgStore } from '@/stores/img'
 
 import AddImg from '@/components/AddImg.vue'
 import PickerColor from '@/components/PickerColor.vue'
-import { storeToRefs } from 'pinia'
 import { onReady } from '@dcloudio/uni-app'
 import { drawImg } from '@/api/drawimg.js'
 
 const store = useImgStore()
-console.log("父组件storesss:", store);
 // const ctx = ref(null);
 // const drp = uni.getSystemInfoSync().pixelRatio
 
@@ -96,37 +48,13 @@ const canvasInfo = ref({
 	tagheight: 1000,
 });
 
-const touchInfo = ref({
-	x: 0,
-	y: 0,
-	x_ratio: 1,
-	y_ratio: 1,
-	isDragging: false,
-});
-
 
 onReady(() => {
 	console.log("onready");
-
-	const query = wx.createSelectorQuery()
-	query.select('#myCanvas')
-		.fields({ node: true, size: true })
-		.exec((res) => {
-			const canvas = res[0].node
-			const ctx = canvas.getContext('2d')
-
-			const dpr = wx.getSystemInfoSync().pixelRatio
-			canvas.width = res[0].width * dpr
-			canvas.height = res[0].height * dpr
-			ctx.scale(dpr, dpr)
-
-			ctx.fillRect(0, 0, 100, 100)
-		})
-	drawImg(canvaswidth, canvasheight)
 });
+
 const canvaswidth = computed(() => {
 	if (store.imgInfo.is_kuan) {
-		console.log('screenwidth:', uni.getSystemInfoSync().screenWidth);
 		return Math.round(
 			canvasInfo.value.tagwidth);
 	} else {
@@ -154,8 +82,7 @@ watch(() => store.imgInfo.url, (newurl) => {
 	console.log("newurl:", newurl);
 	setTimeout(() => {
 		drawImg(canvaswidth, canvasheight)
-	}, 100);
-	// drawImg(canvaswidth, canvasheight)
+	}, 10);
 })
 
 

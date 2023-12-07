@@ -1,1 +1,0 @@
-<view style="display:flex;justify-content:center"><canvas type="2d" id="myCanvas" canvas-id="myCanvas" style="{{'width:' + a + ';' + ('height:' + b) + ';' + ('border:' + '1px solid')}}"></canvas></view>

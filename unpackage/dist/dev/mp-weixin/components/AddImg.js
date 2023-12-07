@@ -23,7 +23,8 @@ const _sfc_main = {
               imgInfo.height = res2.height;
               imgInfo.ratio = imgInfo.width / imgInfo.height;
               drp.value = common_vendor.index.getSystemInfoSync().pixelRatio;
-              console.log("子组件imgInfo:", imgInfo);
+              console.log("imgInfo", imgInfo);
+              console.log("drp", drp.value);
             }
           });
         }
@@ -40,5 +41,5 @@ const _sfc_main = {
     };
   }
 };
-const Component = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["__file", "C:/Users/zxing/Desktop/pickercolor/components/AddImg.vue"]]);
+const Component = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["__file", "/Users/xingzheng/Desktop/pickercolor/components/AddImg.vue"]]);
 wx.createComponent(Component);
