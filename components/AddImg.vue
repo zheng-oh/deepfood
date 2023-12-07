@@ -3,14 +3,13 @@
 		<button type="primary" @tap="addImage">
 			{{ !imgInfo.url ? "Add Image" : "Alter Image" }}
 		</button>
-		<button v-if="imgInfo.url" type="warn" @tap="deleteImage">Delete</button>
+		<button v-if="imgInfo.url" type="warn" @tap="store.deleteImage">Delete</button>
 	</view>
 </template>
 
 <script setup>
 import {
 	ref,
-	defineExpose,
 } from 'vue'
 
 import { useImgStore } from '@/stores/img'

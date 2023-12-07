@@ -35,10 +35,10 @@ const _sfc_main = {
         b: common_vendor.o(addImage),
         c: common_vendor.unref(imgInfo).url
       }, common_vendor.unref(imgInfo).url ? {
-        d: common_vendor.o((...args) => _ctx.deleteImage && _ctx.deleteImage(...args))
+        d: common_vendor.o((...args) => common_vendor.unref(store).deleteImage && common_vendor.unref(store).deleteImage(...args))
       } : {});
     };
   }
 };
-const Component = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["__file", "/Users/xingzheng/Desktop/pickercolor/components/AddImg.vue"]]);
+const Component = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["__file", "C:/Users/zxing/Desktop/pickercolor/components/AddImg.vue"]]);
 wx.createComponent(Component);

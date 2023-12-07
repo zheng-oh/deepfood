@@ -2,6 +2,6 @@
   "navigationBarTitleText": "Picker",
   "usingComponents": {
     "add-img": "../../components/AddImg",
-    "draw-img": "../../components/DrawImg"
+    "picker-color": "../../components/PickerColor"
   }
 }

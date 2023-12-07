@@ -1,0 +1,1 @@
+<view wx:if="{{a}}" class="pickerview"><view style="{{'width:' + b + ';' + ('height:' + c) + ';' + ('background-color:' + d) + ';' + ('margin-left:' + '10rpx') + ';' + ('margin-right:' + '10rpx')}}"></view><text class="large-text">{{e}} {{f}}</text><button class="m-btn" bindtap="{{g}}">Save</button></view>

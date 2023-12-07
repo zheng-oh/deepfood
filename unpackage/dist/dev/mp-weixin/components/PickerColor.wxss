@@ -1,0 +1,11 @@
+
+.pickerview {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10rpx;
+  margin-left: 20rpx;
+  margin-right: 20rpx;
+  /* 右侧空隙 */
+}

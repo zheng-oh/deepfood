@@ -11,12 +11,12 @@
     "minified": true,
     "newFeature": true,
     "bigPackageSizeSupport": true,
-    "packNpmRelationList": [],
     "babelSetting": {
       "ignore": [],
       "disablePlugins": [],
       "outputPath": ""
-    }
+    },
+    "ignoreUploadUnusedFiles": false
   },
   "compileType": "miniprogram",
   "libVersion": "3.2.2",
