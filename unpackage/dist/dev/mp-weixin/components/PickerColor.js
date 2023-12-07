@@ -46,15 +46,15 @@ const _sfc_main = {
       console.log("sliderChangex", e);
       store.cursorInfo.x = e.detail.value / store.imgInfo.width * store.imgInfo.data.width;
       store.imgInfo.re_plot = !store.imgInfo.re_plot;
-      store.getImageRGB();
       store.drawCursor();
+      store.getImageRGB();
     };
     const sliderChangey = (e) => {
       console.log("sliderChangey", e);
       store.cursorInfo.y = e.detail.value / store.imgInfo.height * store.imgInfo.data.height;
       store.imgInfo.re_plot = !store.imgInfo.re_plot;
-      store.getImageRGB();
       store.drawCursor();
+      store.getImageRGB();
     };
     const switch1Change = (e) => {
       console.log("switch1Change", e);
@@ -90,5 +90,5 @@ const _sfc_main = {
     };
   }
 };
-const Component = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["__file", "/Users/xingzheng/Desktop/pickercolor/components/PickerColor.vue"]]);
+const Component = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["__file", "C:/Users/zxing/Desktop/pickercolor/components/PickerColor.vue"]]);
 wx.createComponent(Component);

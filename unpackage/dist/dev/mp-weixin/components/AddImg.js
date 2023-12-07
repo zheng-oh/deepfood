@@ -5,8 +5,7 @@ const _sfc_main = {
   __name: "AddImg",
   setup(__props) {
     const store = stores_img.useImgStore();
-    const imgInfo = store.imgInfo;
-    const drp = common_vendor.ref(0);
+    common_vendor.ref(0);
     const addImage = () => {
       common_vendor.index.chooseImage({
         count: 1,
@@ -14,32 +13,47 @@ const _sfc_main = {
         sourceType: ["album", "camera"],
         success: (res) => {
           const tempFilePaths = res.tempFilePaths;
-          imgInfo.url = tempFilePaths[0];
+          store.imgInfo.url = tempFilePaths[0];
           common_vendor.index.getImageInfo({
             src: tempFilePaths[0],
             success: (res2) => {
-              imgInfo.url = res2.path;
-              imgInfo.width = res2.width;
-              imgInfo.height = res2.height;
-              imgInfo.ratio = imgInfo.width / imgInfo.height;
-              drp.value = common_vendor.index.getSystemInfoSync().pixelRatio;
-              console.log("imgInfo", imgInfo);
-              console.log("drp", drp.value);
+              store.imgInfo.url = res2.path;
+              store.imgInfo.width = res2.width;
+              store.imgInfo.height = res2.height;
+              store.imgInfo.ratio = store.imgInfo.width / store.imgInfo.height;
+              console.log("imgInfo", store.imgInfo);
+              setCanvas();
             }
           });
         }
       });
     };
+    const setCanvas = () => {
+      if (store.imgInfo.is_kuan) {
+        store.canvasInfo.width = Math.round(
+          store.canvasInfo.tagwidth
+        );
+        store.canvasInfo.height = Math.round(
+          store.canvasInfo.tagwidth / store.imgInfo.ratio
+        );
+        console.log("canvasInfo:", store.canvasInfo.tagwidth, store.canvasInfo.width);
+      } else {
+        store.canvasInfo.height = store.canvasInfo.tagheight;
+        store.canvasInfo.width = Math.round(
+          store.canvasInfo.tagheight * store.imgInfo.ratio
+        );
+      }
+    };
     return (_ctx, _cache) => {
       return common_vendor.e({
-        a: common_vendor.t(!common_vendor.unref(imgInfo).url ? "Add Image" : "Alter Image"),
+        a: common_vendor.t(!common_vendor.unref(store).imgInfo.url ? "Add Image" : "Alter Image"),
         b: common_vendor.o(addImage),
-        c: common_vendor.unref(imgInfo).url
-      }, common_vendor.unref(imgInfo).url ? {
+        c: common_vendor.unref(store).imgInfo.url
+      }, common_vendor.unref(store).imgInfo.url ? {
         d: common_vendor.o((...args) => common_vendor.unref(store).deleteImage && common_vendor.unref(store).deleteImage(...args))
       } : {});
     };
   }
 };
-const Component = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["__file", "/Users/xingzheng/Desktop/pickercolor/components/AddImg.vue"]]);
+const Component = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["__file", "C:/Users/zxing/Desktop/pickercolor/components/AddImg.vue"]]);
 wx.createComponent(Component);

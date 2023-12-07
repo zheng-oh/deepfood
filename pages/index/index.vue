@@ -51,72 +51,21 @@ import { onReady } from '@dcloudio/uni-app'
 import { drawImg } from '@/api/drawimg.js'
 
 const store = useImgStore()
-// const ctx = ref(null);
-// const drp = uni.getSystemInfoSync().pixelRatio
-
-
-const canvasInfo = ref({
-	tagwidth: 750,
-	tagheight: 1000,
-});
-
 
 onReady(() => {
 	console.log("onready");
-	store.canvasInfo.width = canvasInfo.value.tagwidth
-	store.canvasInfo.height = canvasInfo.value.tagheight
+	store.canvasInfo.width = store.canvasInfo.tagwidth
+	store.canvasInfo.height = store.canvasInfo.tagheight
 
 });
 
-
-// const canvaswidth = computed(() => {
-// 	if (store.imgInfo.is_kuan) {
-// 		store.canvasInfo.width = Math.round(
-// 			canvasInfo.value.tagwidth);
-// 		return store.canvasInfo.width
-// 	} else {
-// 		store.canvasInfo.height = Math.round(
-// 			canvasInfo.value.tagheight * store.imgInfo.ratio)
-// 		return store.canvasInfo.height
-// 	}
-// });
-
-// const canvasheight = computed(() => {
-// 	if (store.imgInfo.is_kuan) {
-// 		store.canvasInfo.width = Math.round(
-// 			canvasInfo.value.tagwidth / store.imgInfo.ratio
-// 		);
-// 		return store.canvasInfo.width
-// 	} else {
-// 		store.canvasInfo.height = canvasInfo.value.tagheight
-// 		return store.canvasInfo.height
-// 	}
-// });
 
 store.imgInfo.is_kuan = computed(() => {
-	return store.imgInfo.ratio > canvasInfo.value.tagwidth / canvasInfo.value.tagheight;
+	return store.imgInfo.ratio > store.canvasInfo.tagwidth / store.canvasInfo.tagheight;
 });
-
-// watch(store.canvasInfo, (newcanvasInfo) => {
-// 	console.log("newcanvasInfo:", newcanvasInfo);
-
-// })
 
 watch(() => store.imgInfo.url, (newurl) => {
 	console.log("newurl:", newurl);
-	if (store.imgInfo.is_kuan) {
-		store.canvasInfo.width = Math.round(
-			canvasInfo.value.tagwidth
-		);
-		store.canvasInfo.height = Math.round(
-			canvasInfo.value.tagwidth / store.imgInfo.ratio
-		);
-	} else {
-		store.canvasInfo.height = canvasInfo.value.tagheight
-		store.canvasInfo.width = Math.round(
-			canvasInfo.value.tagheight * store.imgInfo.ratio
-		);
-	}
 	setTimeout(() => {
 		drawImg()
 	}, 10);

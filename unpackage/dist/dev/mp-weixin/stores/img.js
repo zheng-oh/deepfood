@@ -12,6 +12,8 @@ const useImgStore = common_vendor.defineStore("img", {
       re_plot: false
     });
     const canvasInfo = common_vendor.ref({
+      tagwidth: 750,
+      tagheight: 900,
       width: 0,
       height: 0
     });
@@ -19,8 +21,7 @@ const useImgStore = common_vendor.defineStore("img", {
       x: 0,
       y: 0,
       x_ratio: 1,
-      y_ratio: 1,
-      isDragging: false
+      y_ratio: 1
     });
     const cursorInfo = common_vendor.ref({
       x: 100,
@@ -40,7 +41,16 @@ const useImgStore = common_vendor.defineStore("img", {
     const drp = common_vendor.index.getSystemInfoSync().pixelRatio;
     const ctxImg = common_vendor.ref(null);
     const ctxCursor = common_vendor.ref(null);
-    return { drp, canvasInfo, imgInfo, touchInfo, cursorInfo, ctxImg, ctxCursor, pickerColor };
+    return {
+      drp,
+      canvasInfo,
+      imgInfo,
+      touchInfo,
+      cursorInfo,
+      ctxImg,
+      ctxCursor,
+      pickerColor
+    };
   },
   // 也可以这样定义
   // state: () => ({ count: 0 })
@@ -57,7 +67,6 @@ const useImgStore = common_vendor.defineStore("img", {
       this.touchInfo.y = touch.y;
       this.cursorInfo.x = this.touchInfo.x * this.touchInfo.x_ratio;
       this.cursorInfo.y = this.touchInfo.y * this.touchInfo.y_ratio;
-      this.touchInfo.isDragging = true;
       this.getImageRGB();
     },
     handleTouchMove(event) {
@@ -66,14 +75,23 @@ const useImgStore = common_vendor.defineStore("img", {
       this.touchInfo.y = touch.y;
       this.cursorInfo.x = this.touchInfo.x * this.touchInfo.x_ratio;
       this.cursorInfo.y = this.touchInfo.y * this.touchInfo.y_ratio;
+      if (this.cursorInfo.x < 0) {
+        this.cursorInfo.x = 0;
+      } else if (this.cursorInfo.x > this.imgInfo.data.width) {
+        this.cursorInfo.x = this.imgInfo.data.width - 1;
+      }
+      if (this.cursorInfo.y < 0) {
+        this.cursorInfo.y = 0;
+      } else if (this.cursorInfo.y > this.imgInfo.data.height) {
+        this.cursorInfo.y = this.imgInfo.data.height - 1;
+      }
       this.getImageRGB();
     },
     handleTouchEnd(event) {
+      this.imgInfo.re_plot = !this.imgInfo.re_plot;
       this.drawCursor();
-      this.touchInfo.isDragging = false;
     },
     drawCursor() {
-      console.log("drawCursor");
       this.ctxCursor.beginPath();
       this.ctxCursor.lineWidth = this.cursorInfo.lineWidth;
       this.ctxCursor.moveTo(

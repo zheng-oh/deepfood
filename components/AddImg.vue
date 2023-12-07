@@ -1,9 +1,9 @@
 <template>
 	<view class="pickerview">
 		<button type="primary" @tap="addImage">
-			{{ !imgInfo.url ? "Add Image" : "Alter Image" }}
+			{{ !store.imgInfo.url ? "Add Image" : "Alter Image" }}
 		</button>
-		<button v-if="imgInfo.url" type="warn" @tap="store.deleteImage">Delete</button>
+		<button v-if="store.imgInfo.url" type="warn" @tap="store.deleteImage">Delete</button>
 	</view>
 </template>
 
@@ -15,7 +15,6 @@ import {
 import { useImgStore } from '@/stores/img'
 
 const store = useImgStore()
-const imgInfo = store.imgInfo
 
 const drp = ref(0);
 
@@ -26,22 +25,41 @@ const addImage = () => {
 		sourceType: ['album', 'camera'],
 		success: (res) => {
 			const tempFilePaths = res.tempFilePaths;
-			imgInfo.url = tempFilePaths[0];
+			store.imgInfo.url = tempFilePaths[0];
 			uni.getImageInfo({
 				src: tempFilePaths[0],
 				success: (res) => {
-					imgInfo.url = res.path;
-					imgInfo.width = res.width;
-					imgInfo.height = res.height;
-					imgInfo.ratio = imgInfo.width / imgInfo.height;
-					drp.value = uni.getSystemInfoSync().pixelRatio;
-					console.log('imgInfo', imgInfo);
-					console.log('drp', drp.value);
+					store.imgInfo.url = res.path;
+					store.imgInfo.width = res.width;
+					store.imgInfo.height = res.height;
+					store.imgInfo.ratio = store.imgInfo.width / store.imgInfo.height;
+					console.log('imgInfo', store.imgInfo);
+					setCanvas();
 				},
 			});
 		},
 	});
 };
+
+
+const setCanvas = () => {
+	if (store.imgInfo.is_kuan) {
+		store.canvasInfo.width = Math.round(
+			store.canvasInfo.tagwidth
+		);
+		store.canvasInfo.height = Math.round(
+			store.canvasInfo.tagwidth / store.imgInfo.ratio
+		);
+		console.log('canvasInfo:', store.canvasInfo.tagwidth, store.canvasInfo.width);
+
+	} else {
+		store.canvasInfo.height = store.canvasInfo.tagheight
+		store.canvasInfo.width = Math.round(
+			store.canvasInfo.tagheight * store.imgInfo.ratio
+		);
+	}
+}
+
 
 </script>
 

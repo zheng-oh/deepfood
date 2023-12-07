@@ -11,33 +11,16 @@ const _sfc_main = {
   __name: "index",
   setup(__props) {
     const store = stores_img.useImgStore();
-    const canvasInfo = common_vendor.ref({
-      tagwidth: 750,
-      tagheight: 1e3
-    });
     common_vendor.onReady(() => {
       console.log("onready");
-      store.canvasInfo.width = canvasInfo.value.tagwidth;
-      store.canvasInfo.height = canvasInfo.value.tagheight;
+      store.canvasInfo.width = store.canvasInfo.tagwidth;
+      store.canvasInfo.height = store.canvasInfo.tagheight;
     });
     store.imgInfo.is_kuan = common_vendor.computed(() => {
-      return store.imgInfo.ratio > canvasInfo.value.tagwidth / canvasInfo.value.tagheight;
+      return store.imgInfo.ratio > store.canvasInfo.tagwidth / store.canvasInfo.tagheight;
     });
     common_vendor.watch(() => store.imgInfo.url, (newurl) => {
       console.log("newurl:", newurl);
-      if (store.imgInfo.is_kuan) {
-        store.canvasInfo.width = Math.round(
-          canvasInfo.value.tagwidth
-        );
-        store.canvasInfo.height = Math.round(
-          canvasInfo.value.tagwidth / store.imgInfo.ratio
-        );
-      } else {
-        store.canvasInfo.height = canvasInfo.value.tagheight;
-        store.canvasInfo.width = Math.round(
-          canvasInfo.value.tagheight * store.imgInfo.ratio
-        );
-      }
       setTimeout(() => {
         api_drawimg.drawImg();
       }, 10);
@@ -82,5 +65,5 @@ const _sfc_main = {
     };
   }
 };
-const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["__file", "/Users/xingzheng/Desktop/pickercolor/pages/index/index.vue"]]);
+const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["__file", "C:/Users/zxing/Desktop/pickercolor/pages/index/index.vue"]]);
 wx.createPage(MiniProgramPage);

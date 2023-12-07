@@ -1,5 +1,9 @@
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import {
+    defineStore
+} from 'pinia';
+import {
+    ref
+} from 'vue';
 
 export const useImgStore = defineStore('img', {
     state: () => {
@@ -14,6 +18,8 @@ export const useImgStore = defineStore('img', {
         });
 
         const canvasInfo = ref({
+            tagwidth: 750,
+            tagheight: 900,
             width: 0,
             height: 0,
         })
@@ -24,7 +30,6 @@ export const useImgStore = defineStore('img', {
             y: 0,
             x_ratio: 1,
             y_ratio: 1,
-            isDragging: false,
         });
 
         const cursorInfo = ref({
@@ -49,7 +54,16 @@ export const useImgStore = defineStore('img', {
         const ctxImg = ref(null);
         const ctxCursor = ref(null);
 
-        return { drp, canvasInfo, imgInfo, touchInfo, cursorInfo, ctxImg, ctxCursor, pickerColor };
+        return {
+            drp,
+            canvasInfo,
+            imgInfo,
+            touchInfo,
+            cursorInfo,
+            ctxImg,
+            ctxCursor,
+            pickerColor
+        };
     },
     // 也可以这样定义
     // state: () => ({ count: 0 })
@@ -72,36 +86,43 @@ export const useImgStore = defineStore('img', {
             // this.drawCursor(this.touchInfo.x, this.touchInfo.y, this.cursorInfo.radius);
             // console.log("touchInfo start x,y:", this.touchInfo.x, this.touchInfo.y);
             // console.log("cursorInfo start x,y:", this.cursorInfo.x, this.cursorInfo.y);
-            this.touchInfo.isDragging = true;
             this.getImageRGB();
             // console.log("pickerColor:", this.pickerColor);
         },
         handleTouchMove(event) {
-            // console.log("handleTouchMove");
-            // if (!this.touchInfo.isDragging) return;
+
 
             const touch = event.touches[0];
             this.touchInfo.x = touch.x;
             this.touchInfo.y = touch.y;
             this.cursorInfo.x = this.touchInfo.x * this.touchInfo.x_ratio;
             this.cursorInfo.y = this.touchInfo.y * this.touchInfo.y_ratio;
-            // console.log("touch:", this.touchInfo.x, this.touchInfo.y);
-            // console.log("cursor", this.cursorInfo.x, this.cursorInfo.y);
-
+            if (this.cursorInfo.x < 0) {
+                this.cursorInfo.x = 0
+            } else if (this.cursorInfo.x > this.imgInfo.data.width) {
+                this.cursorInfo.x = this.imgInfo.data.width - 1
+            };
+            if (this.cursorInfo.y < 0) {
+                this.cursorInfo.y = 0
+            } else if (this.cursorInfo.y > this.imgInfo.data.height) {
+                this.cursorInfo.y = this.imgInfo.data.height - 1
+            };
             this.getImageRGB();
         },
         handleTouchEnd(event) {
             // console.log("handleTouchEnd");
+            this.imgInfo.re_plot = !this.imgInfo.re_plot
+
             this.drawCursor();
-            this.touchInfo.isDragging = false;
         },
 
         drawCursor() {
             // Clear the canvas before drawing the new cursor
             // this.ctx.clearRect(0, 0, this.imgInfo.width, this.imgInfo.height);
-            console.log("drawCursor");
-            // this.ctxCursor.fillStyle = "#00ff00";
-            // this.ctxCursor.fillRect(0, 0, this.cursorInfo.x, this.cursorInfo.y);
+            // console.log("drawCursor");
+            // console.log("cursorInfo:", this.cursorInfo);
+
+
             this.ctxCursor.beginPath();
             this.ctxCursor.lineWidth = this.cursorInfo.lineWidth; // 可以根据需要调整线的宽度
             this.ctxCursor.moveTo(
@@ -128,14 +149,17 @@ export const useImgStore = defineStore('img', {
         },
 
         getImageRGB() {
+            // console.log(this.cursorInfo);
             const x = Math.round(this.cursorInfo.x);
             const y = Math.round(this.cursorInfo.y);
+            // console.log("x,y:", x, y);
             const pixelIndex = (y * this.imgInfo.data.width + x) * 4;
             this.pickerColor.red = this.imgInfo.data.data[pixelIndex];
             this.pickerColor.green = this.imgInfo.data.data[pixelIndex + 1];
             this.pickerColor.blue = this.imgInfo.data.data[pixelIndex + 2];
             this.pickerColor.hexColor = this.rgbToHex();
-            this.pickerColor.rgb = `RGB(${this.pickerColor.red}, ${this.pickerColor.green}, ${this.pickerColor.blue})  Hex(${this.pickerColor.hexColor})`;
+            this.pickerColor.rgb =
+                `RGB(${this.pickerColor.red}, ${this.pickerColor.green}, ${this.pickerColor.blue})  Hex(${this.pickerColor.hexColor})`;
         },
 
         rgbToHex() {
