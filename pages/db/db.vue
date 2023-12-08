@@ -6,9 +6,14 @@
 					:style="{ backgroundColor: `rgb(${color.red},${color.green},${color.blue})`, width: '50px', height: '50px' }">
 				</view>
 				<text class="large-text">{{ color.red }}, {{ color.green }}, {{ color.blue }}</text>
-				<button class="delBut" type="warn" @tap="delColor(index)">Del</button>
+				<view class="colorDel">
+					<u--text type="info" :text="`color${index + 1}`"></u--text>
+					<button class="delBut" type="warn" @tap="delColor(index)">Del</button>
+				</view>
+
 			</view>
-			<view class="divider"></view>
+			<u-line length="100%" dashed> </u-line>
+
 		</view>
 
 		<view class="charts-box">
@@ -143,23 +148,35 @@ onShow(() => {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
-	justify-content: center;
 	margin-top: 5rpx;
 	margin-bottom: 5rpx;
 	margin-left: 20rpx;
 	margin-right: 20rpx;
+	justify-content: space-between;
 }
 
 .divider {
 	width: 100%;
-	height: 5rpx;
+	height: 2px;
 	background-color: #828282;
 	opacity: 0.2;
 
 }
 
+.colorDel {
+	display: flex;
+	flex-direction: row;
+	/* align-items: center; */
+	/* justify-content: center; */
+	margin-left: 100rpx;
+	/* margin-right: 20rpx; */
+
+}
+
 .delBut {
 	margin-right: 20px;
+	margin-left: 10px;
+
 	font-size: 25rpx;
 	vertical-align: middle
 }

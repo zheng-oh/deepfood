@@ -2,6 +2,8 @@
   "navigationBarTitleText": "Display",
   "enablePullDownRefresh": false,
   "usingComponents": {
+    "u--text": "../../uni_modules/uview-plus/components/u--text/u--text",
+    "u-line": "../../uni_modules/uview-plus/components/u-line/u-line",
     "qiun-data-charts": "../../components/qiunCharts/qiun-data-charts/qiun-data-charts"
   }
 }
