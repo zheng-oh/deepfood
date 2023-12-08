@@ -50,7 +50,7 @@ export const useImgStore = defineStore('img', {
             hexColor: "",
         });
 
-        const pickerColors = ref([]);
+        const dbColors = ref([]);
 
         const drp = uni.getSystemInfoSync().pixelRatio;
         const ctxImg = ref(null);
@@ -65,7 +65,7 @@ export const useImgStore = defineStore('img', {
             ctxImg,
             ctxCursor,
             pickerColor,
-            pickerColors
+            dbColors
         };
     },
     // 也可以这样定义

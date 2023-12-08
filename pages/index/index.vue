@@ -1,8 +1,9 @@
 <template>
 	<view>
 		<view style="display: flex; justify-content: center">
-			<canvas type="2d" id="myCursor" canvas-id="myCursor" @touchstart="store.handleTouchStart"
-				@touchmove="store.handleTouchMove" @touchend="store.handleTouchEnd" :style="{
+			<canvas v-show="store.imgInfo.url" type="2d" id="myCursor" canvas-id="myCursor"
+				@touchstart="store.handleTouchStart" @touchmove="store.handleTouchMove" @touchend="store.handleTouchEnd"
+				:style="{
 					width: store.canvasInfo.width + 'rpx',
 					height: store.canvasInfo.height + 'rpx',
 					border: '1px solid',
@@ -25,7 +26,7 @@
 		<PickerColor v-if=store.imgInfo.url squaresize="40"></PickerColor>
 
 		<AddImg></AddImg>
-		{{ store.pickerColors.length }}
+		{{ store.dbColors }}
 	</view>
 </template>
 

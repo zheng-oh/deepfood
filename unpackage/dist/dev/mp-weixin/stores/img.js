@@ -38,7 +38,7 @@ const useImgStore = common_vendor.defineStore("img", {
       rgb: `RGB(0, 0, 0)  Hex(#000000)`,
       hexColor: ""
     });
-    const pickerColors = common_vendor.ref([]);
+    const dbColors = common_vendor.ref([]);
     const drp = common_vendor.index.getSystemInfoSync().pixelRatio;
     const ctxImg = common_vendor.ref(null);
     const ctxCursor = common_vendor.ref(null);
@@ -51,7 +51,7 @@ const useImgStore = common_vendor.defineStore("img", {
       ctxImg,
       ctxCursor,
       pickerColor,
-      pickerColors
+      dbColors
     };
   },
   // 也可以这样定义

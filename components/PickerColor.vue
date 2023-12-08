@@ -78,18 +78,17 @@ const showPlusOne = ref(false);
 
 const addToDB = () => {
   // 判断当前颜色是否和最后一个颜色相同
-  if (store.pickerColors.length > 0) {
-    const lastColor = store.pickerColors[store.pickerColors.length - 1]
-    console.log("lastColor", lastColor.hexColor, store.pickerColor.hexColor);
+  if (store.dbColors.length > 0) {
+    console.log(store.dbColors.length);
+    const lastColor = store.dbColors[store.dbColors.length - 1]
 
     // console.log('lastColor', lastColor.hexColor, store.pickerColor.hexColor);
     if (lastColor.hexColor === store.pickerColor.hexColor) {
-      console.log('same color');
       return
     }
   }
-  console.log('different color');
-  store.pickerColors.push(store.pickerColor)
+  const pickerColor = { ...store.pickerColor };
+  store.dbColors.push(pickerColor)
   showPlusOne.value = true;
 
 
@@ -113,13 +112,24 @@ const slidery = computed(() => {
 const sliderChangex = (e) => {
   store.cursorInfo.x = e.detail.value / store.imgInfo.width * store.imgInfo.data.width
   store.imgInfo.re_plot = !store.imgInfo.re_plot
+  if (store.cursorInfo.x < 0) {
+    store.cursorInfo.x = 0
+  } else if (store.cursorInfo.x >= store.imgInfo.data.width) {
+    store.cursorInfo.x = store.imgInfo.data.width - 1
+  };
+  console.log("x:", store.cursorInfo.x, store.imgInfo.data.width);
+
   store.drawCursor()
   store.getImageRGB()
 }
-
 const sliderChangey = (e) => {
   store.cursorInfo.y = e.detail.value / store.imgInfo.height * store.imgInfo.data.height
   store.imgInfo.re_plot = !store.imgInfo.re_plot
+  if (store.cursorInfo.y < 0) {
+    store.cursorInfo.y = 0
+  } else if (store.cursorInfo.y >= store.imgInfo.data.height) {
+    store.cursorInfo.y = store.imgInfo.data.height - 1
+  };
   store.drawCursor()
   store.getImageRGB()
 }

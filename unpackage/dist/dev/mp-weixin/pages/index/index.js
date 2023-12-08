@@ -33,21 +33,22 @@ const _sfc_main = {
     });
     return (_ctx, _cache) => {
       return common_vendor.e({
-        a: common_vendor.o((...args) => common_vendor.unref(store).handleTouchStart && common_vendor.unref(store).handleTouchStart(...args)),
-        b: common_vendor.o((...args) => common_vendor.unref(store).handleTouchMove && common_vendor.unref(store).handleTouchMove(...args)),
-        c: common_vendor.o((...args) => common_vendor.unref(store).handleTouchEnd && common_vendor.unref(store).handleTouchEnd(...args)),
-        d: common_vendor.unref(store).canvasInfo.width + "rpx",
-        e: common_vendor.unref(store).canvasInfo.height + "rpx",
-        f: common_vendor.unref(store).imgInfo.url,
-        g: common_vendor.unref(store).canvasInfo.width + "rpx",
-        h: common_vendor.unref(store).canvasInfo.height + "rpx",
-        i: common_vendor.unref(store).imgInfo.url
+        a: common_vendor.unref(store).imgInfo.url,
+        b: common_vendor.o((...args) => common_vendor.unref(store).handleTouchStart && common_vendor.unref(store).handleTouchStart(...args)),
+        c: common_vendor.o((...args) => common_vendor.unref(store).handleTouchMove && common_vendor.unref(store).handleTouchMove(...args)),
+        d: common_vendor.o((...args) => common_vendor.unref(store).handleTouchEnd && common_vendor.unref(store).handleTouchEnd(...args)),
+        e: common_vendor.unref(store).canvasInfo.width + "rpx",
+        f: common_vendor.unref(store).canvasInfo.height + "rpx",
+        g: common_vendor.unref(store).imgInfo.url,
+        h: common_vendor.unref(store).canvasInfo.width + "rpx",
+        i: common_vendor.unref(store).canvasInfo.height + "rpx",
+        j: common_vendor.unref(store).imgInfo.url
       }, common_vendor.unref(store).imgInfo.url ? {
-        j: common_vendor.p({
+        k: common_vendor.p({
           squaresize: "40"
         })
       } : {}, {
-        k: common_vendor.t(common_vendor.unref(store).pickerColors.length)
+        l: common_vendor.t(common_vendor.unref(store).dbColors)
       });
     };
   }
