@@ -58,9 +58,9 @@ const cfu = {
     },
     "tooltipDemo1": function(item, category, index, opts) {
       if (index == 0) {
-        return "随便用" + item.data + "年";
+        return `Color_${item.data[0]}:  ` + item.data[1];
       } else {
-        return "其他我没改" + item.data + "天";
+        return `Color_${item.data[0]}:  ` + item.data[1];
       }
     },
     "pieDemo": function(val, index, series, opts) {

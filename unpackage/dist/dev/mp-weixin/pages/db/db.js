@@ -10,32 +10,29 @@ const _sfc_main = {
   setup(__props) {
     const store = stores_img.useImgStore();
     const opts = {
-      color: ["#1890FF", "#91CB74", "#FAC858", "#EE6666", "#73C0DE", "#3CA272", "#FC8452", "#9A60B4", "#ea7ccc"],
-      padding: [15, 10, 0, 15],
+      color: ["#FF0000", "#00FF00", "#0000FF", "#EE6666", "#73C0DE", "#3CA272", "#FC8452", "#9A60B4", "#ea7ccc"],
+      padding: [15, 15, 0, 15],
       enableScroll: false,
       legend: {},
       xAxis: {
-        disableGrid: true
+        disableGrid: true,
+        interval: 1
       },
       yAxis: {
         gridType: "dash",
-        dashLength: 2
+        dashLength: 2,
+        min: 0,
+        max: 255,
+        interval: 5
       },
       extra: {
-        line: {
+        area: {
           type: "straight",
+          opacity: 0.2,
+          addLine: true,
           width: 2,
+          gradient: false,
           activeType: "hollow"
-        },
-        tooltip: {
-          showArrow: false,
-          borderWidth: 1,
-          borderRadius: 8,
-          borderColor: "#FF0000",
-          bgColor: "#FFFFFF",
-          bgOpacity: 0.9,
-          fontColor: "#000000",
-          splitLine: false
         }
       }
     };
@@ -56,6 +53,7 @@ const _sfc_main = {
     });
     const chartData = common_vendor.computed(() => {
       return {
+        categories: ["2018", "2019", "2020", "2021", "2022", "2023"],
         series: [
           {
             name: "Red",
@@ -91,13 +89,12 @@ const _sfc_main = {
           };
         }),
         b: common_vendor.p({
-          type: "line",
+          type: "area",
           opts,
           chartData: common_vendor.unref(chartData),
           tooltipFormat: "tooltipDemo1",
           tooltipCustom: "[object Object]"
-        }),
-        c: common_vendor.t(common_vendor.unref(chartData))
+        })
       };
     };
   }

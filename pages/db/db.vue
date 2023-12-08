@@ -10,11 +10,8 @@
 		</view>
 
 		<view class="charts-box">
-			<qiun-data-charts type="line" :opts="opts" :chartData="chartData" tooltipFormat="tooltipDemo1"
+			<qiun-data-charts type="area" :opts="opts" :chartData="chartData" tooltipFormat="tooltipDemo1"
 				tooltipCustom="[object Object]" />
-		</view>
-		<view>
-			Img Url: {{ chartData }}
 		</view>
 	</view>
 </template>
@@ -32,33 +29,29 @@ const store = useImgStore();
 // const chartData = ref({})
 //您可以通过修改 config-ucharts.js 文件中下标为 ['scatter'] 的节点来配置全局默认参数，如都是默认参数，此处可以不传 opts 。实际应用过程中 opts 只需传入与全局默认参数中不一致的【某一个属性】即可实现同类型的图表显示不同的样式，达到页面简洁的需求。
 const opts = {
-	color: ["#1890FF", "#91CB74", "#FAC858", "#EE6666", "#73C0DE", "#3CA272", "#FC8452", "#9A60B4", "#ea7ccc"],
-	padding: [15, 10, 0, 15],
+	color: ["#FF0000", "#00FF00", "#0000FF", "#EE6666", "#73C0DE", "#3CA272", "#FC8452", "#9A60B4", "#ea7ccc"],
+	padding: [15, 15, 0, 15],
 	enableScroll: false,
 	legend: {},
 	xAxis: {
-		disableGrid: true
+		disableGrid: true,
+		interval: 1,
 	},
 	yAxis: {
 		gridType: "dash",
-		dashLength: 2
+		dashLength: 2,
+		min: 0,
+		max: 255,
+		interval: 5,
 	},
 	extra: {
-		line: {
+		area: {
 			type: "straight",
+			opacity: 0.2,
+			addLine: true,
 			width: 2,
+			gradient: false,
 			activeType: "hollow"
-
-		},
-		tooltip: {
-			showArrow: false,
-			borderWidth: 1,
-			borderRadius: 8,
-			borderColor: "#FF0000",
-			bgColor: "#FFFFFF",
-			bgOpacity: 0.9,
-			fontColor: "#000000",
-			splitLine: false
 		}
 	}
 }
@@ -83,8 +76,16 @@ const plotBlue = computed(() => {
 	});
 });
 
+const categories = ref([])
+
 const chartData = computed(() => {
+	// plotRed.value的长度 生成一个数组
+
+	for (let i = 1; i <= plotRed.value.length; i++) {
+		resultArray.push(i.toString());
+	}
 	return {
+		categories: [str(i) for i in range(1, length + 1)]
 		series: [
 			{
 				name: "Red",
