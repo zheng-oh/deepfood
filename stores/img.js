@@ -55,6 +55,7 @@ export const useImgStore = defineStore('img', {
         const drp = uni.getSystemInfoSync().pixelRatio;
         const ctxImg = ref(null);
         const ctxCursor = ref(null);
+        const screenHeight = uni.getSystemInfoSync().screenHeight;
 
         return {
             drp,
@@ -65,7 +66,8 @@ export const useImgStore = defineStore('img', {
             ctxImg,
             ctxCursor,
             pickerColor,
-            dbColors
+            dbColors,
+            screenHeight
         };
     },
     // 也可以这样定义

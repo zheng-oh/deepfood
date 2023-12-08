@@ -61,9 +61,9 @@ const cfu = {
 		"seriesDemo1": function (val, index, series, opts) { return val + '元' },
 		"tooltipDemo1": function (item, category, index, opts) {
 			if (index == 0) {
-				return `Color_${item.data[0]}:  ` + item.data[1]
+				return `Color_${index + 1}:  ` + item.data
 			} else {
-				return `Color_${item.data[0]}:  ` + item.data[1]
+				return `Color_${index + 1}:  ` + item.data
 			}
 		},
 		"pieDemo": function (val, index, series, opts) {

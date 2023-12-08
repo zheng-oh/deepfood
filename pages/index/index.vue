@@ -8,32 +8,21 @@
 					height: store.canvasInfo.height + 'rpx',
 					border: '1px solid',
 				}"></canvas>
-			<!-- <image :src=store.imgInfo.url :style="{
-				width: canvaswidth + 'rpx',
-				height: canvasheight + 'rpx',
-				border: '1px solid',
-				'object-fit': cover
-			}" /> -->
+
 			<canvas v-show="store.imgInfo.url" type="2d" id="myCanvas" canvas-id="myCanvas" :style="{
 				width: store.canvasInfo.width + 'rpx',
 				height: store.canvasInfo.height + 'rpx',
 				border: '1px solid',
 			}"></canvas>
-
-
 		</view>
-
 		<PickerColor v-if=store.imgInfo.url squaresize="40"></PickerColor>
-
 		<AddImg></AddImg>
-		{{ store.dbColors }}
 	</view>
 </template>
 
 
 <script setup>
 import {
-	ref,
 	watch,
 	computed,
 } from 'vue'

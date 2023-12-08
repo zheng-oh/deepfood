@@ -10,9 +10,12 @@
       }"></view>
       <text class="large-text"> {{ store.pickerColor.rgb }}</text>
       <button class="m-btn" @tap="addToDB">Save</button>
-      <transition name="fade">
-        <div v-if="showPlusOne" class="plus-one">+1</div>
-      </transition>
+      <view :style="jumpStyle">
+        <transition name="fade">
+          <view v-if="showPlusOne" class="plus-one">+1</view>
+        </transition>
+      </view>
+
     </view>
     <slot></slot>
     <view>
@@ -29,7 +32,7 @@
       }">
       </button>
       <switch :checked="store.cursorInfo.cover" @change="switch1Change" color="#FFCC33" style="transform:scale(0.7)" />
-
+      {{ store.cursorInfo.cover ? 'Cluster' : 'Alone' }}
     </view>
   </view>
 </template>
@@ -76,8 +79,17 @@ const setCursorColor = (color) => {
 
 const showPlusOne = ref(false);
 
-const addToDB = () => {
+
+const jumpStyle = ref()
+
+const setJump = (jumpheight) => {
+  jumpStyle.value = [`--jumpheight_1: ${jumpheight - 5}px`, `--jumpheight_2: ${jumpheight}px`, `--jumpheight_3: ${jumpheight - 40}px`]
+}
+
+const addToDB = (e) => {
   // 判断当前颜色是否和最后一个颜色相同
+  console.log(store.screenHeight, e.target.offsetTop);
+  setJump(store.screenHeight - e.target.offsetTop - 220)
   if (store.dbColors.length > 0) {
     console.log(store.dbColors.length);
     const lastColor = store.dbColors[store.dbColors.length - 1]
@@ -170,27 +182,28 @@ const switch1Change = (e) => {
 
 .plus-one {
   position: absolute;
-  left: 90%;
-  /* transform: translateX(0%); */
+  left: 75%;
   font-size: 1.5rem;
   color: green;
   animation: bounce 1s ease-out;
+  z-index: 100;
 }
 
 @keyframes bounce {
 
   0% {
-    transform: translateY(-20px);
-    opacity: 1;
+    transform: translateY(var(--jumpheight_1));
+    opacity: 0;
   }
 
-  50% {
-    transform: translateY(-30px);
+  20% {
+
+    transform: translateY(var(--jumpheight_2));
     opacity: 1;
   }
 
   100% {
-    transform: translateY(-40px);
+    transform: translateY(var(--jumpheight_3));
     opacity: 0;
   }
 }
