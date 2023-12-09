@@ -1,1 +1,8 @@
-"use strict";const r={circleProgress:{percentage:30}};exports.CircleProgress=r;
+"use strict";
+const CircleProgress = {
+  // circleProgress 组件
+  circleProgress: {
+    percentage: 30
+  }
+};
+exports.CircleProgress = CircleProgress;

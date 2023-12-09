@@ -1,1 +1,14 @@
-"use strict";const e={swipeActionItem:{show:!1,name:"",disabled:!1,threshold:20,autoClose:!0,options:[],duration:300}};exports.SwipeActionItem=e;
+"use strict";
+const SwipeActionItem = {
+  // swipeActionItem 组件
+  swipeActionItem: {
+    show: false,
+    name: "",
+    disabled: false,
+    threshold: 20,
+    autoClose: true,
+    options: [],
+    duration: 300
+  }
+};
+exports.SwipeActionItem = SwipeActionItem;

@@ -1,1 +1,11 @@
-"use strict";const e={stepsItem:{title:"",desc:"",iconSize:17,error:!1}};exports.StepsItem=e;
+"use strict";
+const StepsItem = {
+  // steps-item组件
+  stepsItem: {
+    title: "",
+    desc: "",
+    iconSize: 17,
+    error: false
+  }
+};
+exports.StepsItem = StepsItem;

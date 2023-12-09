@@ -1,1 +1,10 @@
-"use strict";const t={row:{gutter:0,justify:"start",align:"center"}};exports.Row=t;
+"use strict";
+const Row = {
+  // row
+  row: {
+    gutter: 0,
+    justify: "start",
+    align: "center"
+  }
+};
+exports.Row = Row;

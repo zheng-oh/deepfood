@@ -1,1 +1,23 @@
-"use strict";const o={modal:{show:!1,title:"",content:"",confirmText:"确认",cancelText:"取消",showConfirmButton:!0,showCancelButton:!1,confirmColor:"#2979ff",cancelColor:"#606266",buttonReverse:!1,zoom:!0,asyncClose:!1,closeOnClickOverlay:!1,negativeTop:0,width:"650rpx",confirmButtonShape:""}};exports.Modal=o;
+"use strict";
+const Modal = {
+  // modal 组件
+  modal: {
+    show: false,
+    title: "",
+    content: "",
+    confirmText: "确认",
+    cancelText: "取消",
+    showConfirmButton: true,
+    showCancelButton: false,
+    confirmColor: "#2979ff",
+    cancelColor: "#606266",
+    buttonReverse: false,
+    zoom: true,
+    asyncClose: false,
+    closeOnClickOverlay: false,
+    negativeTop: 0,
+    width: "650rpx",
+    confirmButtonShape: ""
+  }
+};
+exports.Modal = Modal;

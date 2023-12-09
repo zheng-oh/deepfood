@@ -1,1 +1,101 @@
-"use strict";const a=require("../../../../common/vendor.js");class o{constructor(){this.config={type:"navigateTo",url:"",delta:1,params:{},animationType:"pop-in",animationDuration:300,intercept:!1},this.route=this.route.bind(this)}addRootPath(e){return e[0]==="/"?e:`/${e}`}mixinParam(e,i){e=e&&this.addRootPath(e);let t="";return/.*\/.*\?.*=.*/.test(e)?(t=a.index.$u.queryParams(i,!1),e+=`&${t}`):(t=a.index.$u.queryParams(i),e+=t)}async route(e={},i={}){let t={};typeof e=="string"?(t.url=this.mixinParam(e,i),t.type="navigateTo"):(t=a.index.$u.deepMerge(this.config,e),t.url=this.mixinParam(e.url,e.params)),t.url!==a.index.$u.page()&&(i.intercept&&(this.config.intercept=i.intercept),t.params=i,t=a.index.$u.deepMerge(this.config,t),typeof a.index.$u.routeIntercept=="function"?await new Promise((n,u)=>{a.index.$u.routeIntercept(t,n)})&&this.openPage(t):this.openPage(t))}openPage(e){const{url:i,type:t,delta:r,animationType:n,animationDuration:u}=e;(e.type=="navigateTo"||e.type=="to")&&a.index.navigateTo({url:i,animationType:n,animationDuration:u}),(e.type=="redirectTo"||e.type=="redirect")&&a.index.redirectTo({url:i}),(e.type=="switchTab"||e.type=="tab")&&a.index.switchTab({url:i}),(e.type=="reLaunch"||e.type=="launch")&&a.index.reLaunch({url:i}),(e.type=="navigateBack"||e.type=="back")&&a.index.navigateBack({delta:r})}}const s=new o().route;exports.route=s;
+"use strict";
+const common_vendor = require("../../../../common/vendor.js");
+class Router {
+  constructor() {
+    this.config = {
+      type: "navigateTo",
+      url: "",
+      delta: 1,
+      // navigateBack页面后退时,回退的层数
+      params: {},
+      // 传递的参数
+      animationType: "pop-in",
+      // 窗口动画,只在APP有效
+      animationDuration: 300,
+      // 窗口动画持续时间,单位毫秒,只在APP有效
+      intercept: false
+      // 是否需要拦截
+    };
+    this.route = this.route.bind(this);
+  }
+  // 判断url前面是否有"/"，如果没有则加上，否则无法跳转
+  addRootPath(url) {
+    return url[0] === "/" ? url : `/${url}`;
+  }
+  // 整合路由参数
+  mixinParam(url, params) {
+    url = url && this.addRootPath(url);
+    let query = "";
+    if (/.*\/.*\?.*=.*/.test(url)) {
+      query = common_vendor.index.$u.queryParams(params, false);
+      return url += `&${query}`;
+    }
+    query = common_vendor.index.$u.queryParams(params);
+    return url += query;
+  }
+  // 对外的方法名称
+  async route(options = {}, params = {}) {
+    let mergeConfig = {};
+    if (typeof options === "string") {
+      mergeConfig.url = this.mixinParam(options, params);
+      mergeConfig.type = "navigateTo";
+    } else {
+      mergeConfig = common_vendor.index.$u.deepMerge(this.config, options);
+      mergeConfig.url = this.mixinParam(options.url, options.params);
+    }
+    if (mergeConfig.url === common_vendor.index.$u.page())
+      return;
+    if (params.intercept) {
+      this.config.intercept = params.intercept;
+    }
+    mergeConfig.params = params;
+    mergeConfig = common_vendor.index.$u.deepMerge(this.config, mergeConfig);
+    if (typeof common_vendor.index.$u.routeIntercept === "function") {
+      const isNext = await new Promise((resolve, reject) => {
+        common_vendor.index.$u.routeIntercept(mergeConfig, resolve);
+      });
+      isNext && this.openPage(mergeConfig);
+    } else {
+      this.openPage(mergeConfig);
+    }
+  }
+  // 执行路由跳转
+  openPage(config) {
+    const {
+      url,
+      type,
+      delta,
+      animationType,
+      animationDuration
+    } = config;
+    if (config.type == "navigateTo" || config.type == "to") {
+      common_vendor.index.navigateTo({
+        url,
+        animationType,
+        animationDuration
+      });
+    }
+    if (config.type == "redirectTo" || config.type == "redirect") {
+      common_vendor.index.redirectTo({
+        url
+      });
+    }
+    if (config.type == "switchTab" || config.type == "tab") {
+      common_vendor.index.switchTab({
+        url
+      });
+    }
+    if (config.type == "reLaunch" || config.type == "launch") {
+      common_vendor.index.reLaunch({
+        url
+      });
+    }
+    if (config.type == "navigateBack" || config.type == "back") {
+      common_vendor.index.navigateBack({
+        delta
+      });
+    }
+  }
+}
+const route = new Router().route;
+exports.route = route;

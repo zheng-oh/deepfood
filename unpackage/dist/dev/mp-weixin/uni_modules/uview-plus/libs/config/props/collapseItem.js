@@ -1,1 +1,18 @@
-"use strict";const e={collapseItem:{title:"",value:"",label:"",disabled:!1,isLink:!0,clickable:!0,border:!0,align:"left",name:"",icon:"",duration:300}};exports.CollapseItem=e;
+"use strict";
+const CollapseItem = {
+  // collapseItem 组件
+  collapseItem: {
+    title: "",
+    value: "",
+    label: "",
+    disabled: false,
+    isLink: true,
+    clickable: true,
+    border: true,
+    align: "left",
+    name: "",
+    icon: "",
+    duration: 300
+  }
+};
+exports.CollapseItem = CollapseItem;

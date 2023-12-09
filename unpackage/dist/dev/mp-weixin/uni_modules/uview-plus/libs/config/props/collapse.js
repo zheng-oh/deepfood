@@ -1,1 +1,10 @@
-"use strict";const l={collapse:{value:null,accordion:!1,border:!0}};exports.Collapse=l;
+"use strict";
+const Collapse = {
+  // collapse 组件
+  collapse: {
+    value: null,
+    accordion: false,
+    border: true
+  }
+};
+exports.Collapse = Collapse;

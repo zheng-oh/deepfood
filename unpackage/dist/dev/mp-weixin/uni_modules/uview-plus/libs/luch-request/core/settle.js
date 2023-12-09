@@ -1,1 +1,11 @@
-"use strict";function u(c,i,t){const{validateStatus:s}=t.config,a=t.statusCode;a&&(!s||s(a))?c(t):i(t)}exports.settle=u;
+"use strict";
+function settle(resolve, reject, response) {
+  const { validateStatus } = response.config;
+  const status = response.statusCode;
+  if (status && (!validateStatus || validateStatus(status))) {
+    resolve(response);
+  } else {
+    reject(response);
+  }
+}
+exports.settle = settle;

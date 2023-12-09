@@ -1,1 +1,15 @@
-"use strict";const e={alert:{title:"",type:"warning",description:"",closable:!1,showIcon:!1,effect:"light",center:!1,fontSize:14}};exports.Alert=e;
+"use strict";
+const Alert = {
+  // alert警告组件
+  alert: {
+    title: "",
+    type: "warning",
+    description: "",
+    closable: false,
+    showIcon: false,
+    effect: "light",
+    center: false,
+    fontSize: 14
+  }
+};
+exports.Alert = Alert;

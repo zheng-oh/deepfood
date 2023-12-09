@@ -1,1 +1,23 @@
-"use strict";const e={image:{src:"",mode:"aspectFill",width:"300",height:"225",shape:"square",radius:0,lazyLoad:!0,showMenuByLongpress:!0,loadingIcon:"photo",errorIcon:"error-circle",showLoading:!0,showError:!0,fade:!0,webp:!1,duration:500,bgColor:"#f3f4f6"}};exports.Image=e;
+"use strict";
+const Image = {
+  // image组件
+  image: {
+    src: "",
+    mode: "aspectFill",
+    width: "300",
+    height: "225",
+    shape: "square",
+    radius: 0,
+    lazyLoad: true,
+    showMenuByLongpress: true,
+    loadingIcon: "photo",
+    errorIcon: "error-circle",
+    showLoading: true,
+    showError: true,
+    fade: true,
+    webp: false,
+    duration: 500,
+    bgColor: "#f3f4f6"
+  }
+};
+exports.Image = Image;

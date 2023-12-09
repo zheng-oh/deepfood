@@ -1,1 +1,29 @@
-"use strict";const e={textarea:{value:"",placeholder:"",placeholderClass:"textarea-placeholder",placeholderStyle:"color: #c0c4cc",height:70,confirmType:"done",disabled:!1,count:!1,focus:!1,autoHeight:!1,fixed:!1,cursorSpacing:0,cursor:"",showConfirmBar:!0,selectionStart:-1,selectionEnd:-1,adjustPosition:!0,disableDefaultPadding:!1,holdKeyboard:!1,maxlength:140,border:"surround",formatter:null}};exports.Textarea=e;
+"use strict";
+const Textarea = {
+  // textarea 组件
+  textarea: {
+    value: "",
+    placeholder: "",
+    placeholderClass: "textarea-placeholder",
+    placeholderStyle: "color: #c0c4cc",
+    height: 70,
+    confirmType: "done",
+    disabled: false,
+    count: false,
+    focus: false,
+    autoHeight: false,
+    fixed: false,
+    cursorSpacing: 0,
+    cursor: "",
+    showConfirmBar: true,
+    selectionStart: -1,
+    selectionEnd: -1,
+    adjustPosition: true,
+    disableDefaultPadding: false,
+    holdKeyboard: false,
+    maxlength: 140,
+    border: "surround",
+    formatter: null
+  }
+};
+exports.Textarea = Textarea;

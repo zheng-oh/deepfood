@@ -17,6 +17,9 @@
 		</view>
 		<PickerColor v-if=store.imgInfo.url squaresize="40"></PickerColor>
 		<AddImg></AddImg>
+		<view v-show="!store.imgInfo.url" style="marginTop:15rpx"> <u--text :margin="20" align="center" bold :size="20"
+				type="primary" text="Research is hard, tool should be easy"></u--text></view>
+
 	</view>
 </template>
 
@@ -30,7 +33,6 @@ import {
 // 	store
 // } from '@/api/store.js'
 import { useImgStore } from '@/stores/img'
-
 import AddImg from '@/components/AddImg.vue'
 import PickerColor from '@/components/PickerColor.vue'
 import { onReady } from '@dcloudio/uni-app'

@@ -1,1 +1,29 @@
-"use strict";const e={upload:{accept:"image",capture:()=>["album","camera"],compressed:!0,camera:"back",maxDuration:60,uploadIcon:"camera-fill",uploadIconColor:"#D3D4D6",useBeforeRead:!1,previewFullImage:!0,maxCount:52,disabled:!1,imageMode:"aspectFill",name:"",sizeType:()=>["original","compressed"],multiple:!1,deletable:!0,maxSize:Number.MAX_VALUE,fileList:()=>[],uploadText:"",width:80,height:80,previewImage:!0}};exports.Upload=e;
+"use strict";
+const Upload = {
+  // upload组件
+  upload: {
+    accept: "image",
+    capture: () => ["album", "camera"],
+    compressed: true,
+    camera: "back",
+    maxDuration: 60,
+    uploadIcon: "camera-fill",
+    uploadIconColor: "#D3D4D6",
+    useBeforeRead: false,
+    previewFullImage: true,
+    maxCount: 52,
+    disabled: false,
+    imageMode: "aspectFill",
+    name: "",
+    sizeType: () => ["original", "compressed"],
+    multiple: false,
+    deletable: true,
+    maxSize: Number.MAX_VALUE,
+    fileList: () => [],
+    uploadText: "",
+    width: 80,
+    height: 80,
+    previewImage: true
+  }
+};
+exports.Upload = Upload;

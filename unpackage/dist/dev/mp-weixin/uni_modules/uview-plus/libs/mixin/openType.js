@@ -1,1 +1,27 @@
-"use strict";const t={props:{openType:String},methods:{onGetUserInfo(e){this.$emit("getuserinfo",e.detail)},onContact(e){this.$emit("contact",e.detail)},onGetPhoneNumber(e){this.$emit("getphonenumber",e.detail)},onError(e){this.$emit("error",e.detail)},onLaunchApp(e){this.$emit("launchapp",e.detail)},onOpenSetting(e){this.$emit("opensetting",e.detail)}}};exports.openType=t;
+"use strict";
+const openType = {
+  props: {
+    openType: String
+  },
+  methods: {
+    onGetUserInfo(event) {
+      this.$emit("getuserinfo", event.detail);
+    },
+    onContact(event) {
+      this.$emit("contact", event.detail);
+    },
+    onGetPhoneNumber(event) {
+      this.$emit("getphonenumber", event.detail);
+    },
+    onError(event) {
+      this.$emit("error", event.detail);
+    },
+    onLaunchApp(event) {
+      this.$emit("launchapp", event.detail);
+    },
+    onOpenSetting(event) {
+      this.$emit("opensetting", event.detail);
+    }
+  }
+};
+exports.openType = openType;

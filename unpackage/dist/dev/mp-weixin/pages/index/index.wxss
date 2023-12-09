@@ -1,1 +1,25 @@
-#myCanvas{position:absolute;z-index:1}#myCursor{position:relative;z-index:200}.m-btn{font-size:25rpx;background-color:#c2dfff}.large-text{display:flex;align-items:center;justify-content:center;text-align:center;font-size:30rpx;font-weight:700}
+
+#myCanvas {
+	position: absolute;
+	z-index: 1;
+}
+#myCursor {
+	position: relative;
+	z-index: 200;
+}
+.m-btn {
+	font-size: 25rpx;
+	/* background-color: #6a717b; */
+	background-color: #c2dfff;
+	/* 使用蓝色的十六进制值 */
+
+	/* 调试用的红色边框 */
+}
+.large-text {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	font-size: 30rpx;
+	font-weight: bold;
+}

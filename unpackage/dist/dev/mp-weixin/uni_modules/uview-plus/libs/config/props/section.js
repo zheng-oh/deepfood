@@ -1,1 +1,17 @@
-"use strict";const t={section:{title:"",subTitle:"更多",right:!0,fontSize:15,bold:!0,color:"#303133",subColor:"#909399",showLine:!0,lineColor:"",arrow:!0}};exports.Section=t;
+"use strict";
+const Section = {
+  // u-section组件
+  section: {
+    title: "",
+    subTitle: "更多",
+    right: true,
+    fontSize: 15,
+    bold: true,
+    color: "#303133",
+    subColor: "#909399",
+    showLine: true,
+    lineColor: "",
+    arrow: true
+  }
+};
+exports.Section = Section;
