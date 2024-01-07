@@ -4,12 +4,14 @@ const stores_img = require("../../stores/img.js");
 if (!Array) {
   const _easycom_u__text2 = common_vendor.resolveComponent("u--text");
   const _easycom_u_line2 = common_vendor.resolveComponent("u-line");
-  (_easycom_u__text2 + _easycom_u_line2)();
+  const _easycom_u_switch2 = common_vendor.resolveComponent("u-switch");
+  (_easycom_u__text2 + _easycom_u_line2 + _easycom_u_switch2)();
 }
 const _easycom_u__text = () => "../../uni_modules/uview-plus/components/u--text/u--text.js";
 const _easycom_u_line = () => "../../uni_modules/uview-plus/components/u-line/u-line.js";
+const _easycom_u_switch = () => "../../uni_modules/uview-plus/components/u-switch/u-switch.js";
 if (!Math) {
-  (_easycom_u__text + _easycom_u_line + qiunDataCharts)();
+  (_easycom_u__text + _easycom_u_line + qiunDataCharts + _easycom_u_switch)();
 }
 const qiunDataCharts = () => "../../components/qiunCharts/qiun-data-charts/qiun-data-charts.js";
 const _sfc_main = {
@@ -18,26 +20,24 @@ const _sfc_main = {
     const store = stores_img.useImgStore();
     const opts = common_vendor.ref({
       color: ["#FF0000", "#00FF00", "#0000FF", "#EE6666", "#73C0DE", "#3CA272", "#FC8452", "#9A60B4", "#ea7ccc"],
-      padding: [15, 15, 0, 15],
+      padding: [15, 10, 0, 15],
       enableScroll: false,
       legend: {},
       xAxis: {
-        disableGrid: true
+        disableGrid: true,
+        scrollShow: true,
+        itemCount: 4,
+        rotateLabel: false
       },
       yAxis: {
         gridType: "dash",
-        dashLength: 2,
-        min: 0,
-        max: 255,
-        interval: 5
+        dashLength: 2
       },
+      update: true,
       extra: {
-        area: {
+        line: {
           type: "straight",
-          opacity: 0.2,
-          addLine: true,
           width: 2,
-          gradient: false,
           activeType: "hollow"
         }
       }
@@ -60,28 +60,33 @@ const _sfc_main = {
     const plotCetagory = common_vendor.computed(() => {
       let resultArray = [];
       for (let i = 1; i <= store.dbColors.length; i++) {
-        resultArray.push("color" + i.toString());
+        resultArray.push("Sample " + i.toString());
       }
       return resultArray;
     });
+    const enablerotateL = (e) => {
+      opts.value.xAxis.rotateLabel = e;
+    };
+    const reshow = common_vendor.ref(false);
     const chartData = common_vendor.computed(() => {
-      return {
+      const res = {
         categories: plotCetagory.value,
         series: [
           {
-            name: "Red",
+            name: "Red intensity",
             data: plotRed.value
           },
           {
-            name: "Green",
+            name: "Green intensity",
             data: plotGreen.value
           },
           {
-            name: "Blue",
+            name: "Blue intensity",
             data: plotBlue.value
           }
         ]
       };
+      return JSON.parse(JSON.stringify(res));
     });
     const delColor = (index) => {
       store.dbColors.splice(index, 1);
@@ -89,10 +94,13 @@ const _sfc_main = {
     common_vendor.onReady(() => {
       console.log("dbvue_onready");
     });
+    common_vendor.onHide(() => {
+      reshow.value = false;
+      console.log("dbvue_onhide");
+    });
     common_vendor.onShow(() => {
-      setTimeout(() => {
-        opts.value.xAxis.disableGrid = !opts.value.xAxis.disableGrid;
-      }, 100);
+      reshow.value = true;
+      console.log("dbvue_onshow");
     });
     return (_ctx, _cache) => {
       return {
@@ -105,7 +113,7 @@ const _sfc_main = {
             e: "0e4540db-0-" + i0,
             f: common_vendor.p({
               type: "info",
-              text: `color${index + 1}`
+              text: `Sample ${index + 1}`
             }),
             g: common_vendor.o(($event) => delColor(index), index),
             h: "0e4540db-1-" + i0,
@@ -117,10 +125,19 @@ const _sfc_main = {
           dashed: true
         }),
         c: common_vendor.p({
-          type: "area",
+          type: "line",
           opts: opts.value,
           chartData: common_vendor.unref(chartData),
-          tooltipFormat: "tooltipDemo1"
+          reshow: reshow.value
+        }),
+        d: common_vendor.o(enablerotateL),
+        e: common_vendor.o(($event) => opts.value.xAxis.rotateLabel = $event),
+        f: common_vendor.p({
+          modelValue: opts.value.xAxis.rotateLabel
+        }),
+        g: common_vendor.p({
+          type: "info",
+          text: "Sample_Label_Roate"
         })
       };
     };
