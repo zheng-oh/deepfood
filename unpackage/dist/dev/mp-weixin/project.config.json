@@ -15,11 +15,10 @@
       "ignore": [],
       "disablePlugins": [],
       "outputPath": ""
-    },
-    "ignoreUploadUnusedFiles": true
+    }
   },
   "compileType": "miniprogram",
-  "libVersion": "3.2.2",
+  "libVersion": "3.6.5",
   "appid": "wxd3374d026a348782",
   "projectname": "pickercolor",
   "condition": {},

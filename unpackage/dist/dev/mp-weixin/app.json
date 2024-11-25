@@ -1,7 +1,9 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/db/db"
+    "pages/tools/pickercolor",
+    "pages/db/db",
+    "pages/models/models"
   ],
   "window": {
     "navigationBarTextStyle": "black",
@@ -17,13 +19,19 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "RGB",
+        "text": "Tools",
         "iconPath": "static/rgb2.png",
         "selectedIconPath": "static/rgb.png"
       },
       {
         "pagePath": "pages/db/db",
         "text": "Database",
+        "iconPath": "static/db2.png",
+        "selectedIconPath": "static/db.png"
+      },
+      {
+        "pagePath": "pages/models/models",
+        "text": "Models",
         "iconPath": "static/db2.png",
         "selectedIconPath": "static/db.png"
       }

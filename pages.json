@@ -8,13 +8,26 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "Picker"
+				"navigationBarTitleText": "Tools"
+			}
+		},
+		{
+			"path": "pages/tools/pickercolor",
+			"style": {
+				"navigationBarTitleText": "PickerColor"
 			}
 		},
 		{
 			"path": "pages/db/db",
 			"style": {
 				"navigationBarTitleText": "Display",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/models/models",
+			"style": {
+				"navigationBarTitleText": "Models",
 				"enablePullDownRefresh": false
 			}
 		}
@@ -27,13 +40,19 @@
 		"list": [
 			{
 				"pagePath": "pages/index/index",
-				"text": "RGB",
+				"text": "Tools",
 				"iconPath": "static/rgb2.png",
 				"selectedIconPath": "static/rgb.png"
 			},
 			{
 				"pagePath": "pages/db/db",
 				"text": "Database",
+				"iconPath": "static/db2.png",
+				"selectedIconPath": "static/db.png"
+			},
+			{
+				"pagePath": "pages/models/models",
+				"text": "Models",
 				"iconPath": "static/db2.png",
 				"selectedIconPath": "static/db.png"
 			}

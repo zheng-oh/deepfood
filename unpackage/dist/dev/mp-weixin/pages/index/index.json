@@ -1,8 +1,4 @@
 {
-  "navigationBarTitleText": "Picker",
-  "usingComponents": {
-    "u--text": "../../uni_modules/uview-plus/components/u--text/u--text",
-    "add-img": "../../components/AddImg",
-    "picker-color": "../../components/PickerColor"
-  }
+  "navigationBarTitleText": "Tools",
+  "usingComponents": {}
 }

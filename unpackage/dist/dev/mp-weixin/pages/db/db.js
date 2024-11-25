@@ -2,16 +2,13 @@
 const common_vendor = require("../../common/vendor.js");
 const stores_img = require("../../stores/img.js");
 if (!Array) {
-  const _easycom_u__text2 = common_vendor.resolveComponent("u--text");
-  const _easycom_u_line2 = common_vendor.resolveComponent("u-line");
-  const _easycom_u_switch2 = common_vendor.resolveComponent("u-switch");
-  (_easycom_u__text2 + _easycom_u_line2 + _easycom_u_switch2)();
+  const _component_u__text = common_vendor.resolveComponent("u--text");
+  const _component_u_line = common_vendor.resolveComponent("u-line");
+  const _component_u_switch = common_vendor.resolveComponent("u-switch");
+  (_component_u__text + _component_u_line + _component_u_switch)();
 }
-const _easycom_u__text = () => "../../uni_modules/uview-plus/components/u--text/u--text.js";
-const _easycom_u_line = () => "../../uni_modules/uview-plus/components/u-line/u-line.js";
-const _easycom_u_switch = () => "../../uni_modules/uview-plus/components/u-switch/u-switch.js";
 if (!Math) {
-  (_easycom_u__text + _easycom_u_line + qiunDataCharts + _easycom_u_switch)();
+  qiunDataCharts();
 }
 const qiunDataCharts = () => "../../components/qiunCharts/qiun-data-charts/qiun-data-charts.js";
 const _sfc_main = {
@@ -110,13 +107,13 @@ const _sfc_main = {
             b: common_vendor.t(color.red),
             c: common_vendor.t(color.green),
             d: common_vendor.t(color.blue),
-            e: "0e4540db-0-" + i0,
+            e: "3160fe4b-0-" + i0,
             f: common_vendor.p({
               type: "info",
               text: `Sample ${index + 1}`
             }),
             g: common_vendor.o(($event) => delColor(index), index),
-            h: "0e4540db-1-" + i0,
+            h: "3160fe4b-1-" + i0,
             i: index
           };
         }),
@@ -127,7 +124,7 @@ const _sfc_main = {
         c: common_vendor.p({
           type: "line",
           opts: opts.value,
-          chartData: common_vendor.unref(chartData),
+          chartData: chartData.value,
           reshow: reshow.value
         }),
         d: common_vendor.o(enablerotateL),
@@ -143,5 +140,4 @@ const _sfc_main = {
     };
   }
 };
-const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["__file", "C:/Users/zxing/Desktop/pickercolor/pages/db/db.vue"]]);
-wx.createPage(MiniProgramPage);
+wx.createPage(_sfc_main);

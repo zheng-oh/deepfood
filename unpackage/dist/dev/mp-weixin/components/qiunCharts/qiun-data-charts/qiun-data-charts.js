@@ -50,7 +50,7 @@ function debounce(fn, wait) {
 }
 const _sfc_main = {
   name: "qiun-data-charts",
-  mixins: [common_vendor.Ws.mixinDatacom],
+  mixins: [common_vendor.Ys.mixinDatacom],
   props: {
     type: {
       type: String,
@@ -1003,5 +1003,5 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     ac: "ChartBoxId" + $data.cid
   });
 }
-const Component = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__scopeId", "data-v-0c0d2774"], ["__file", "C:/Users/zxing/Desktop/pickercolor/components/qiunCharts/qiun-data-charts/qiun-data-charts.vue"]]);
+const Component = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__scopeId", "data-v-0c0d2774"]]);
 wx.createComponent(Component);

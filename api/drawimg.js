@@ -1,15 +1,14 @@
 import { useImgStore } from '../stores/img';
 
 // const ctx = ref(null);
-// const drp = uni.getSystemInfoSync().pixelRatio
 
-const drawImg = () => {
+const drawImg = (instance) => {
     const store = useImgStore();
     // console.log("canvaswidth, canvasheight:", store.canvasInfo.width, store.canvasInfo.height);
     // const ctx = ref(null);
     const query = uni.createSelectorQuery();
     query
-        .select('#myCanvas')
+        .select('#myCanvas', instance)
         .fields({
             node: true,
             size: true,
