@@ -5,7 +5,6 @@ const api_wxshare = require("./api/wxshare.js");
 if (!Math) {
   "./pages/index/index.js";
   "./pages/tools/pickercolor.js";
-  "./pages/db/db.js";
   "./pages/models/models.js";
 }
 const _sfc_main = {

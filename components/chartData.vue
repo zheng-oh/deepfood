@@ -5,7 +5,7 @@
 				<button class="m-btn" size="mini" @tap="addToDB">Save color</button>
 			</view>
 			<view class="colorListBox">
-				<view v-for="(color, index) in img.dbColors" :key="index" @click="delColor(color)"
+				<view v-for="(color, index) in img.dbColors" :key="index" @click="delColor(index)"
 					:style="{ backgroundColor: `rgb(${color.red},${color.green},${color.blue})` }">
 				</view>
 			</view>
@@ -14,10 +14,20 @@
 		<view class="charts-box">
 			<qiun-data-charts type="line" :opts="opts" :chartData="chartData" :reshow="reshow" />
 		</view>
+		<view class="bottomBtn">
+			<view class="clearBtn">
+				<uni-icons custom-prefix="iconfont" type="icon-qingkong" size="30" color="#000"
+					@click="clearColor"></uni-icons>
+				<!-- <button class="m-btn" size="mini" @tap="clearColor">Clear</button> -->
+			</view>
+			<view class="exportBtn">
+				<uni-icons custom-prefix="iconfont" type="icon-xiazai-" size="30" color="#000"
+					@click="exportColor"></uni-icons>
+			</view>
+		</view>
 
 	</view>
 </template>
-
 
 <script setup>
 import {
@@ -47,9 +57,7 @@ const addToDB = (e) => {
 		});
 		return
 	}
-	console.log(img.screenHeight, e.target.offsetTop);
 	if (img.dbColors.length > 0) {
-		console.log(img.dbColors.length);
 		const lastColor = img.dbColors[img.dbColors.length - 1]
 
 		// console.log('lastColor', lastColor.hexColor, img.pickerColor.hexColor);
@@ -62,7 +70,14 @@ const addToDB = (e) => {
 			return
 		}
 	}
-	const pickerColor = { ...img.pickerColor };
+	const pickerColor = {
+		x: img.pickerColor.x,
+		y: img.pickerColor.y,
+		red: img.pickerColor.red,
+		green: img.pickerColor.green,
+		blue: img.pickerColor.blue,
+		hexColor: img.pickerColor.hexColor
+	};
 	img.dbColors.push(pickerColor)
 	opts.value.xAxis.rotateLabel = img.dbColors.length > 5 ? true : false;
 
@@ -154,6 +169,41 @@ const delColor = (index) => {
 	img.dbColors.splice(index, 1);
 };
 
+const clearColor = () => {
+	img.dbColors = [];
+};
+
+const exportColor = () => {
+	// Create CSV header
+	let csvContent = "Sample\tRed\tGreen\tBlue\tHexColor\n";
+
+	// Add each color data row
+	img.dbColors.forEach((color, index) => {
+		csvContent += `${index + 1}\t${color.red}\t${color.green}\t${color.blue}\t${color.hexColor}\n`;
+	});
+
+	// Create temp file path
+	const fs = wx.getFileSystemManager();
+	const today = new Date();
+	const date = today.getFullYear().toString().slice(-2) + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0');
+	const fileName = `colorData_${date}.csv`;
+	const filePath = `${wx.env.USER_DATA_PATH}/${fileName}`;
+
+	// Write CSV content to file
+	fs.writeFileSync(filePath, '\ufeff' + csvContent, 'utf8');
+
+	// Share file 
+	wx.shareFileMessage({
+		filePath: filePath,
+		success: () => {
+			console.log('File shared successfully');
+		},
+		fail: (err) => {
+			console.error('Failed to share file:', err);
+		}
+	});
+};
+
 onReady(() => {
 	console.log("dbvue_onready");
 	// getServerData();
@@ -206,9 +256,10 @@ onShow(() => {
 	width: 60px;
 	height: 100%;
 	margin-right: 10px;
+
 	button {
 		color: #fff;
-		background-color: $td-gray2;
+		background-color: #3c41b4;
 		// 按钮居中
 		display: flex;
 		justify-content: center;
@@ -237,17 +288,27 @@ onShow(() => {
 	}
 }
 
-.divider {
-	width: 100%;
-	height: 2px;
-	background-color: #828282;
-	opacity: 0.2;
-
-}
-
-
 .charts-box {
 	width: 100%;
 	height: 300px;
+}
+
+.bottomBtn {
+	@include flexr(space-around, center);
+	width: 100%;
+	height: 40px;
+	opacity: 0.7;
+}
+
+.clearBtn {
+	@include flexc(center, center);
+	width: 40px;
+	height: 100%;
+}
+
+.exportBtn {
+	@include flexc(center, center);
+	width: 20px;
+	height: 20px;
 }
 </style>

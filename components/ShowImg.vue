@@ -15,7 +15,7 @@
       </view>
       <view v-if="!img.imgInfo.url" class="onebutview">
         <button size="large" @tap="addImage" style="color: #ffffff; background-color: #3A42B9">
-          Add Image
+          Add image
         </button>
       </view>
       <view v-else class="pickerview">
@@ -44,7 +44,7 @@
 
         <view class="butview">
           <button size="mini" @tap="addImage" style="color: #ffffff; background-color: #3A42B9">
-            {{ !img.imgInfo.url ? "Add Image" : "Alter Image" }}
+            {{ !img.imgInfo.url ? "Add image" : "Alter image" }}
           </button>
           <button v-if="img.imgInfo.url" size="mini" type="warn" @click="img.deleteImage" style="color: #ffffff; background-color: #b62924">Delete</button>
         </view>
@@ -211,7 +211,7 @@ watch(() => img.imgInfo.url, () => {
   // background-color: rgb(143, 129, 129);
   border-width: 1px;
   border-style: solid;
-  border-color: $td-gray2;
+  border-color: $df-gray2;
   padding: 2px;
 }
 

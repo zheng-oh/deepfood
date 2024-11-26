@@ -121,12 +121,17 @@ const useImgStore = common_vendor.defineStore("img", {
       }
     },
     initCursorMag() {
+      console.log("执行initCurMag");
       this.cursorInfo.x = this.canvasInfo.x;
       this.cursorInfo.y = this.canvasInfo.y;
       this.ctxMag = common_vendor.index.createCanvasContext("magnifier", this.instance);
       this.ctxCursor = common_vendor.index.createCanvasContext("myCursor", this.instance);
       this.ctxMag.clearRect(0, 0, this.magnifier.width, this.magnifier.height);
       this.ctxCursor.clearRect(0, 0, this.cursorInfo.radius * 2, this.cursorInfo.radius * 2);
+      this.ctxMag.draw();
+      this.ctxCursor.draw();
+      this.pickerColor.hexColor = "";
+      this.pickerColor.rgb = `RGB(0, 0, 0)  Hex(#000000)`;
     },
     runMove(event) {
       const touch = event.touches[0];

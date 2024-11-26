@@ -129,6 +129,26 @@ function parseStringStyle(cssText) {
   });
   return ret;
 }
+function normalizeClass(value) {
+  let res = "";
+  if (isString(value)) {
+    res = value;
+  } else if (isArray(value)) {
+    for (let i2 = 0; i2 < value.length; i2++) {
+      const normalized = normalizeClass(value[i2]);
+      if (normalized) {
+        res += normalized + " ";
+      }
+    }
+  } else if (isObject(value)) {
+    for (const name in value) {
+      if (value[name]) {
+        res += name + " ";
+      }
+    }
+  }
+  return res.trim();
+}
 const toDisplayString = (val) => {
   return isString(val) ? val : val == null ? "" : isArray(val) || isObject(val) && (val.toString === objectToString || !isFunction(val.toString)) ? JSON.stringify(val, replacer, 2) : String(val);
 };
@@ -6866,6 +6886,7 @@ const o$1 = (value, key) => vOn(value, key);
 const f$1 = (source, renderItem) => vFor(source, renderItem);
 const s$1 = (value) => stringifyStyle(value);
 const e$1 = (target, ...sources) => extend(target, ...sources);
+const n$1 = (value) => normalizeClass(value);
 const t$1 = (val) => toDisplayString(val);
 const p$1 = (props) => renderProps(props);
 function createApp$1(rootComponent, rootProps = null) {
@@ -8492,13 +8513,6 @@ const pages = [
     }
   },
   {
-    path: "pages/db/db",
-    style: {
-      navigationBarTitleText: "Display",
-      enablePullDownRefresh: false
-    }
-  },
-  {
     path: "pages/models/models",
     style: {
       navigationBarTitleText: "Models",
@@ -8515,14 +8529,8 @@ const tabBar = {
     {
       pagePath: "pages/index/index",
       text: "Tools",
-      iconPath: "static/rgb2.png",
-      selectedIconPath: "static/rgb.png"
-    },
-    {
-      pagePath: "pages/db/db",
-      text: "Database",
-      iconPath: "static/db2.png",
-      selectedIconPath: "static/db.png"
+      iconPath: "static/tool.png",
+      selectedIconPath: "static/tools.png"
     },
     {
       pagePath: "pages/models/models",
@@ -11315,6 +11323,7 @@ exports.e = e$1;
 exports.f = f$1;
 exports.getCurrentInstance = getCurrentInstance;
 exports.index = index;
+exports.n = n$1;
 exports.o = o$1;
 exports.onHide = onHide;
 exports.onReady = onReady;
@@ -11326,3 +11335,4 @@ exports.s = s$1;
 exports.t = t$1;
 exports.unref = unref;
 exports.watch = watch;
+exports.wx$1 = wx$1;

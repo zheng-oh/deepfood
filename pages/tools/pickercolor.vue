@@ -5,7 +5,7 @@
       </ShowImg>
     </view>
     <view v-if="!img.imgInfo.url" class="pcimg">
-      <image src="@/static/tools/pickerColor.png" alt="pickerColor" mode="aspectFit" />
+      <image src="https://cos.zxing.cc/deepfood/pickercolor.png" alt="pickerColor" mode="aspectFit" />
     </view>
     <view class="plotimg">
       <ChartData v-if="img.imgInfo.url" />
@@ -49,6 +49,7 @@ const img = useImgStore()
   height: 100vh;
   /* 确保页面占满屏幕 */
   width: 100%;
+
 }
 
 .showimg {

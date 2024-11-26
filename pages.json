@@ -18,13 +18,6 @@
 			}
 		},
 		{
-			"path": "pages/db/db",
-			"style": {
-				"navigationBarTitleText": "Display",
-				"enablePullDownRefresh": false
-			}
-		},
-		{
 			"path": "pages/models/models",
 			"style": {
 				"navigationBarTitleText": "Models",
@@ -41,14 +34,8 @@
 			{
 				"pagePath": "pages/index/index",
 				"text": "Tools",
-				"iconPath": "static/rgb2.png",
-				"selectedIconPath": "static/rgb.png"
-			},
-			{
-				"pagePath": "pages/db/db",
-				"text": "Database",
-				"iconPath": "static/db2.png",
-				"selectedIconPath": "static/db.png"
+				"iconPath": "static/tool.png",
+				"selectedIconPath": "static/tools.png"
 			},
 			{
 				"pagePath": "pages/models/models",

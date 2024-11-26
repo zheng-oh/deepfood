@@ -2,7 +2,6 @@
   "pages": [
     "pages/index/index",
     "pages/tools/pickercolor",
-    "pages/db/db",
     "pages/models/models"
   ],
   "window": {
@@ -20,14 +19,8 @@
       {
         "pagePath": "pages/index/index",
         "text": "Tools",
-        "iconPath": "static/rgb2.png",
-        "selectedIconPath": "static/rgb.png"
-      },
-      {
-        "pagePath": "pages/db/db",
-        "text": "Database",
-        "iconPath": "static/db2.png",
-        "selectedIconPath": "static/db.png"
+        "iconPath": "static/tool.png",
+        "selectedIconPath": "static/tools.png"
       },
       {
         "pagePath": "pages/models/models",

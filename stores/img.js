@@ -147,12 +147,18 @@ export const useImgStore = defineStore('img', {
         },
 
         initCursorMag() {
+            console.log("执行initCurMag");
             this.cursorInfo.x = this.canvasInfo.x;
             this.cursorInfo.y = this.canvasInfo.y;
             this.ctxMag = uni.createCanvasContext('magnifier', this.instance);
             this.ctxCursor = uni.createCanvasContext('myCursor', this.instance);
             this.ctxMag.clearRect(0, 0, this.magnifier.width, this.magnifier.height);
             this.ctxCursor.clearRect(0, 0, this.cursorInfo.radius * 2, this.cursorInfo.radius * 2);
+            // 需要调用draw()方法才能真正清空画布
+            this.ctxMag.draw();
+            this.ctxCursor.draw();
+            this.pickerColor.hexColor = "";
+            this.pickerColor.rgb = `RGB(0, 0, 0)  Hex(#000000)`;
         },
 
         runMove(event) {

@@ -1,6 +1,15 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
+const common_assets = require("../../common/assets.js");
 const stores_img = require("../../stores/img.js");
+if (!Array) {
+  const _easycom_uni_card2 = common_vendor.resolveComponent("uni-card");
+  _easycom_uni_card2();
+}
+const _easycom_uni_card = () => "../../uni_modules/uni-card/components/uni-card/uni-card.js";
+if (!Math) {
+  _easycom_uni_card();
+}
 const _sfc_main = {
   __name: "index",
   setup(__props) {
@@ -13,9 +22,26 @@ const _sfc_main = {
         url: "/pages/tools/pickercolor"
       });
     };
+    const goToLanyaba = () => {
+      common_vendor.wx$1.navigateToMiniProgram({
+        appId: "wxfa7ecaa71b2b805c",
+        // 需要替换为目标小程序的 appId
+        path: "pages/index/index",
+        // 打开的页面路径，如果为空则打开首页
+        success(res) {
+          console.log("跳转成功");
+        },
+        fail(err) {
+          console.log("跳转失败", err);
+        }
+      });
+    };
     return (_ctx, _cache) => {
       return {
-        a: common_vendor.o(goToPickerColor)
+        a: common_assets._imports_0,
+        b: common_vendor.o(goToPickerColor),
+        c: common_assets._imports_1,
+        d: common_vendor.o(goToLanyaba)
       };
     };
   }
