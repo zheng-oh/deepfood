@@ -51,23 +51,6 @@
 
       </view>
     </view>
-    <!-- <view>
-          {{ img.imgInfo.width }}x{{ img.imgInfo.height }}
-        </view>
-        <view>
-          canvasInfo: {{ img.canvasInfo.x }}x{{ img.canvasInfo.y }}
-        </view>
-        <view>canvasInfo.tag: {{ img.canvasInfo.tagwidth }} x {{ img.canvasInfo.tagheight }} __ {{ img.imgInfo.data.length }}
-        </view>
-        <view>
-         touchInfo: {{ img.touchInfo.x }}x{{ img.touchInfo.y }}
-        </view>
-        <view>
-          cursorInfo: {{ img.cursorInfo.x }}x{{ img.cursorInfo.y }}
-        </view>
-        <view>
-          pickerColor: {{ img.pickerColor.x }}x{{ img.pickerColor.y }}
-        </view> -->
   </view>
 
 </template>

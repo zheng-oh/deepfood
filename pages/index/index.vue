@@ -4,26 +4,22 @@
       <text class="titletext">Research is hard, tools should be easy</text>
     </view>
     <view class="toolslist">
-      <uni-card>
-        <view class="toolcard" @click="goToPickerColor" hover-class="toolcard-hover">
-          <view class="toolcardimg">
+        <view class="toolone" @click="goToPickerColor" hover-class="toolone-hover">
+          <view class="tooloneimg">
             <image src="@/static/tools/rgb.png" alt="rgb" mode="aspectFit" />
           </view>
-          <view class="toolcardtext">
+          <view class="tooltext">
             <text>PickerColor</text>
           </view>
         </view>
-      </uni-card>
-      <uni-card>
-        <view class="toolcard" @click="goToLanyaba" hover-class="toolcard-hover">
-          <view class="toolcardimg">
+        <view class="toolone" @click="goToLanyaba" hover-class="toolone-hover">
+          <view class="tooloneimg">
             <image src="@/static/tools/lanyaba.png" alt="rgb" mode="aspectFit" />
           </view>
-          <view class="toolcardtext">
+          <view class="tooltext">
             <text>Lanyaba</text>
           </view>
         </view>
-      </uni-card>
     </view>
   </view>
 </template>
@@ -121,31 +117,29 @@ const goToLanyaba = () => {
 .toolslist {
   @include flexc(stretch, center);
   width: 100%;
-  height: 90vh;
-
-  uni-card {
-    width: 100%;
-  }
+  // height: 90vh;
+  padding: 10px 0;
+  background-color: rgba(67, 68, 70, 0.5);
 }
 
-.toolcard {
+.toolone {
   @include flexr(space-around, center);
-  padding: 5px;
-  width: 100%;
-  height: 80px;
-  border-radius: 10px;
-  // background-color: #2b60f2;
+    width: 92%;
+    // height: 100px;
+    margin:10px ;
+    border-radius: 5px;
+    background-color: #fff;
 }
 
-.toolcard-hover {
-  background-color: rgba(119, 119, 119, 0.1);
+.toolone-hover {
+  background-color: #fff;
   transform: scale(0.98);
   transition: all 0.2s ease;
 }
 
 
 
-.toolcardimg {
+.tooloneimg {
   @include flexc(center, center);
   width: 80px;
   height: 80px;
@@ -156,11 +150,11 @@ const goToLanyaba = () => {
   }
 }
 
-.toolcardtext {
+.tooltext {
   @include flexc(center, center);
   font-size: 20px;
   font-weight: bold;
-  color: #b2291a;
+  color: $df-dark;
   // background-color: #000;
 }
 </style>

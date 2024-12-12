@@ -40,7 +40,6 @@ export const useImgStore = defineStore('img', {
             color: '#ffffff',
         });
 
-
         const pickerColor = ref({
             x: 0,
             y: 0,
@@ -132,7 +131,7 @@ export const useImgStore = defineStore('img', {
                 this.pickerColor.x = Math.floor(this.touchInfo.x - this.canvasInfo.x);
             } else {
                 this.cursorInfo.x = this.canvasInfo.tagwidth + this.canvasInfo.x - 1;
-                this.pickerColor.x = this.canvasInfo.tagwidth-1;
+                this.pickerColor.x = this.canvasInfo.tagwidth - 1;
             }
             if (this.touchInfo.y < this.canvasInfo.y) {
                 this.cursorInfo.y = this.canvasInfo.y;
@@ -173,7 +172,7 @@ export const useImgStore = defineStore('img', {
             this.drawCursor();
             this.getImageRGB();
         },
-        
+
 
         handleTouchStart(event) {
             // this.pickerColor.hexColor = "";
@@ -185,11 +184,6 @@ export const useImgStore = defineStore('img', {
         },
         handleTouchEnd(event) {
             event.preventDefault(); // 阻止页面滚动
-
-            // console.log("handleTouchEnd");
-            // this.imgInfo.re_plot = !this.imgInfo.re_plot
-
-            // this.drawCursor();
         },
 
         drawCursor() {
@@ -232,21 +226,14 @@ export const useImgStore = defineStore('img', {
                 console.error("没有图片URL");
                 return;
             }
-
             // 清除之前的内容
             this.ctxMag.clearRect(0, 0, 100, 100);
 
             // 计算源图像区域
             const sourceX = Math.max(0, (this.touchInfo.x - this.canvasInfo.x) / this.touchInfo.x_ratio - this.magnifier.width / 2 / this.magnifier.zoom);
-            // const sourceX = Math.max(0, this.touchInfo.x - this.magnifier.lside/this.magnifier.zoom);
             const sourceY = Math.max(0, (this.touchInfo.y - this.canvasInfo.y) / this.touchInfo.y_ratio - this.magnifier.height / 2 / this.magnifier.zoom);
-            // const sourceY = Math.max(0, this.touchInfo.y - this.magnifier.lside/this.magnifier.zoom);
             const sourceWidth = this.magnifier.width / this.magnifier.zoom;
             const sourceHeight = this.magnifier.height / this.magnifier.zoom;
-            // console.log("********************");
-            // console.log("touchInfo:", this.touchInfo.x, this.touchInfo.y);
-            // console.log("source:", sourceX, sourceY);
-            // 绘制图像
             this.ctxMag.drawImage(
                 this.imgInfo.url,
                 sourceX,

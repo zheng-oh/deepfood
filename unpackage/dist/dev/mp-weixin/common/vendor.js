@@ -201,6 +201,7 @@ const ON_TAB_ITEM_TAP = "onTabItemTap";
 const ON_REACH_BOTTOM = "onReachBottom";
 const ON_PULL_DOWN_REFRESH = "onPullDownRefresh";
 const ON_SHARE_TIMELINE = "onShareTimeline";
+const ON_SHARE_CHAT = "onShareChat";
 const ON_ADD_TO_FAVORITES = "onAddToFavorites";
 const ON_SHARE_APP_MESSAGE = "onShareAppMessage";
 const ON_NAVIGATION_BAR_BUTTON_TAP = "onNavigationBarButtonTap";
@@ -208,10 +209,6 @@ const ON_NAVIGATION_BAR_SEARCH_INPUT_CLICKED = "onNavigationBarSearchInputClicke
 const ON_NAVIGATION_BAR_SEARCH_INPUT_CHANGED = "onNavigationBarSearchInputChanged";
 const ON_NAVIGATION_BAR_SEARCH_INPUT_CONFIRMED = "onNavigationBarSearchInputConfirmed";
 const ON_NAVIGATION_BAR_SEARCH_INPUT_FOCUS_CHANGED = "onNavigationBarSearchInputFocusChanged";
-const customizeRE = /:/g;
-function customizeEvent(str) {
-  return camelize(str.replace(customizeRE, "-"));
-}
 function hasLeadingSlash(str) {
   return str.indexOf("/") === 0;
 }
@@ -260,6 +257,10 @@ function sortObject(obj) {
   }
   return !Object.keys(sortObj) ? obj : sortObj;
 }
+const customizeRE = /:/g;
+function customizeEvent(str) {
+  return camelize(str.replace(customizeRE, "-"));
+}
 const encode = encodeURIComponent;
 function stringifyQuery(obj, encodeStr = encode) {
   const res = obj ? Object.keys(obj).map((key) => {
@@ -286,6 +287,7 @@ const PAGE_HOOKS = [
   ON_PULL_DOWN_REFRESH,
   ON_SHARE_TIMELINE,
   ON_SHARE_APP_MESSAGE,
+  ON_SHARE_CHAT,
   ON_ADD_TO_FAVORITES,
   ON_SAVE_EXIT_STATE,
   ON_NAVIGATION_BAR_BUTTON_TAP,
@@ -319,6 +321,7 @@ const UniLifecycleHooks = [
   ON_SHARE_TIMELINE,
   ON_ADD_TO_FAVORITES,
   ON_SHARE_APP_MESSAGE,
+  ON_SHARE_CHAT,
   ON_SAVE_EXIT_STATE,
   ON_NAVIGATION_BAR_BUTTON_TAP,
   ON_NAVIGATION_BAR_SEARCH_INPUT_CLICKED,
@@ -361,16 +364,18 @@ const invokeCreateErrorHandler = once((app, createErrorHandler2) => {
     return createErrorHandler2(app);
   }
 });
-const E$1 = function() {
+const E = function() {
 };
-E$1.prototype = {
+E.prototype = {
+  _id: 1,
   on: function(name, callback, ctx) {
     var e2 = this.e || (this.e = {});
     (e2[name] || (e2[name] = [])).push({
       fn: callback,
-      ctx
+      ctx,
+      _id: this._id
     });
-    return this;
+    return this._id++;
   },
   once: function(name, callback, ctx) {
     var self2 = this;
@@ -391,13 +396,13 @@ E$1.prototype = {
     }
     return this;
   },
-  off: function(name, callback) {
+  off: function(name, event) {
     var e2 = this.e || (this.e = {});
     var evts = e2[name];
     var liveEvents = [];
-    if (evts && callback) {
+    if (evts && event) {
       for (var i2 = evts.length - 1; i2 >= 0; i2--) {
-        if (evts[i2].fn === callback || evts[i2].fn._ === callback) {
+        if (evts[i2].fn === event || evts[i2].fn._ === event || evts[i2]._id === event) {
           evts.splice(i2, 1);
           break;
         }
@@ -408,7 +413,7 @@ E$1.prototype = {
     return this;
   }
 };
-var E$1$1 = E$1;
+var E$1 = E;
 const LOCALE_ZH_HANS = "zh-Hans";
 const LOCALE_ZH_HANT = "zh-Hant";
 const LOCALE_EN = "en";
@@ -768,25 +773,9 @@ function promisify$1(name, fn) {
   };
 }
 function formatApiArgs(args, options) {
-  const params = args[0];
-  if (!options || !options.formatArgs || !isPlainObject$1(options.formatArgs) && isPlainObject$1(params)) {
+  args[0];
+  {
     return;
-  }
-  const formatArgs = options.formatArgs;
-  const keys = Object.keys(formatArgs);
-  for (let i2 = 0; i2 < keys.length; i2++) {
-    const name = keys[i2];
-    const formatterOrDefaultValue = formatArgs[name];
-    if (isFunction(formatterOrDefaultValue)) {
-      const errMsg = formatterOrDefaultValue(args[0][name], params);
-      if (isString(errMsg)) {
-        return errMsg;
-      }
-    } else {
-      if (!hasOwn(params, name)) {
-        params[name] = formatterOrDefaultValue;
-      }
-    }
   }
 }
 function invokeSuccess(id, name, res) {
@@ -796,8 +785,18 @@ function invokeSuccess(id, name, res) {
   return invokeCallback(id, extend(res || {}, result));
 }
 function invokeFail(id, name, errMsg, errRes = {}) {
-  const apiErrMsg = name + ":fail" + (errMsg ? " " + errMsg : "");
-  delete errRes.errCode;
+  const errMsgPrefix = name + ":fail";
+  let apiErrMsg = "";
+  if (!errMsg) {
+    apiErrMsg = errMsgPrefix;
+  } else if (errMsg.indexOf(errMsgPrefix) === 0) {
+    apiErrMsg = errMsg;
+  } else {
+    apiErrMsg = errMsgPrefix + " " + errMsg;
+  }
+  {
+    delete errRes.errCode;
+  }
   let res = extend({ errMsg: apiErrMsg }, errRes);
   return invokeCallback(id, res);
 }
@@ -805,13 +804,7 @@ function beforeInvokeApi(name, args, protocol, options) {
   {
     validateProtocols(name, args, protocol);
   }
-  if (options && options.beforeInvoke) {
-    const errMsg2 = options.beforeInvoke(args);
-    if (isString(errMsg2)) {
-      return errMsg2;
-    }
-  }
-  const errMsg = formatApiArgs(args, options);
+  const errMsg = formatApiArgs(args);
   if (errMsg) {
     return errMsg;
   }
@@ -821,7 +814,9 @@ function parseErrMsg(errMsg) {
     return errMsg;
   }
   if (errMsg.stack) {
-    console.error(errMsg.message + "\n" + errMsg.stack);
+    if (typeof globalThis === "undefined" || !globalThis.harmonyChannel) {
+      console.error(errMsg.message + "\n" + errMsg.stack);
+    }
     return errMsg.message;
   }
   return errMsg;
@@ -829,7 +824,7 @@ function parseErrMsg(errMsg) {
 function wrapperTaskApi(name, fn, protocol, options) {
   return (args) => {
     const id = createAsyncApiCallback(name, args, options);
-    const errMsg = beforeInvokeApi(name, [args], protocol, options);
+    const errMsg = beforeInvokeApi(name, [args], protocol);
     if (errMsg) {
       return invokeFail(id, name, errMsg);
     }
@@ -841,7 +836,7 @@ function wrapperTaskApi(name, fn, protocol, options) {
 }
 function wrapperSyncApi(name, fn, protocol, options) {
   return (...args) => {
-    const errMsg = beforeInvokeApi(name, args, protocol, options);
+    const errMsg = beforeInvokeApi(name, args, protocol);
     if (errMsg) {
       throw new Error(errMsg);
     }
@@ -852,7 +847,7 @@ function wrapperAsyncApi(name, fn, protocol, options) {
   return wrapperTaskApi(name, fn, protocol, options);
 }
 function defineSyncApi(name, fn, protocol, options) {
-  return wrapperSyncApi(name, fn, protocol, options);
+  return wrapperSyncApi(name, fn, protocol);
 }
 function defineAsyncApi(name, fn, protocol, options) {
   return promisify$1(name, wrapperAsyncApi(name, fn, protocol, options));
@@ -983,7 +978,7 @@ const OffProtocol = [
   },
   {
     name: "callback",
-    type: Function
+    type: [Function, Number]
   }
 ];
 const API_EMIT = "$emit";
@@ -994,26 +989,43 @@ const EmitProtocol = [
     required: true
   }
 ];
-const emitter = new E$1$1();
+class EventBus {
+  constructor() {
+    this.$emitter = new E$1();
+  }
+  on(name, callback) {
+    return this.$emitter.on(name, callback);
+  }
+  once(name, callback) {
+    return this.$emitter.once(name, callback);
+  }
+  off(name, callback) {
+    if (!name) {
+      this.$emitter.e = {};
+      return;
+    }
+    this.$emitter.off(name, callback);
+  }
+  emit(name, ...args) {
+    this.$emitter.emit(name, ...args);
+  }
+}
+const eventBus = new EventBus();
 const $on = defineSyncApi(API_ON, (name, callback) => {
-  emitter.on(name, callback);
-  return () => emitter.off(name, callback);
+  eventBus.on(name, callback);
+  return () => eventBus.off(name, callback);
 }, OnProtocol);
 const $once = defineSyncApi(API_ONCE, (name, callback) => {
-  emitter.once(name, callback);
-  return () => emitter.off(name, callback);
+  eventBus.once(name, callback);
+  return () => eventBus.off(name, callback);
 }, OnceProtocol);
 const $off = defineSyncApi(API_OFF, (name, callback) => {
-  if (!name) {
-    emitter.e = {};
-    return;
-  }
   if (!isArray(name))
-    name = [name];
-  name.forEach((n2) => emitter.off(n2, callback));
+    name = name ? [name] : [];
+  name.forEach((n2) => eventBus.off(n2, callback));
 }, OffProtocol);
 const $emit = defineSyncApi(API_EMIT, (name, ...args) => {
-  emitter.emit(name, ...args);
+  eventBus.emit(name, ...args);
 }, EmitProtocol);
 let cid;
 let cidErrMsg;
@@ -1275,14 +1287,24 @@ function addSafeAreaInsets(fromRes, toRes) {
     };
   }
 }
-function populateParameters(fromRes, toRes) {
-  const { brand = "", model = "", system = "", language = "", theme, version: version2, platform, fontSizeSetting, SDKVersion, pixelRatio, deviceOrientation } = fromRes;
+function getOSInfo(system, platform) {
   let osName = "";
   let osVersion = "";
-  {
+  if (platform && false) {
+    osName = platform;
+    osVersion = system;
+  } else {
     osName = system.split(" ")[0] || "";
     osVersion = system.split(" ")[1] || "";
   }
+  return {
+    osName: osName.toLocaleLowerCase(),
+    osVersion
+  };
+}
+function populateParameters(fromRes, toRes) {
+  const { brand = "", model = "", system = "", language = "", theme, version: version2, platform, fontSizeSetting, SDKVersion, pixelRatio, deviceOrientation } = fromRes;
+  const { osName, osVersion } = getOSInfo(system, platform);
   let hostVersion = version2;
   let deviceType = getGetDeviceType(fromRes, model);
   let deviceBrand = getDeviceBrand(brand);
@@ -1297,15 +1319,16 @@ function populateParameters(fromRes, toRes) {
     appVersion: "1.0.0",
     appVersionCode: "100",
     appLanguage: getAppLanguage(hostLanguage),
-    uniCompileVersion: "4.29",
-    uniRuntimeVersion: "4.29",
+    uniCompileVersion: "4.36",
+    uniCompilerVersion: "4.36",
+    uniRuntimeVersion: "4.36",
     uniPlatform: "mp-weixin",
     deviceBrand,
     deviceModel: model,
     deviceType,
     devicePixelRatio: _devicePixelRatio,
     deviceOrientation: _deviceOrientation,
-    osName: osName.toLocaleLowerCase(),
+    osName,
     osVersion,
     hostTheme: theme,
     hostVersion,
@@ -1321,7 +1344,8 @@ function populateParameters(fromRes, toRes) {
     ua: void 0,
     hostPackageName: void 0,
     browserName: void 0,
-    browserVersion: void 0
+    browserVersion: void 0,
+    isUniAppX: false
   };
   extend(toRes, parameters);
 }
@@ -1414,14 +1438,17 @@ const showActionSheet = {
 };
 const getDeviceInfo = {
   returnValue: (fromRes, toRes) => {
-    const { brand, model } = fromRes;
+    const { brand, model, system = "", platform = "" } = fromRes;
     let deviceType = getGetDeviceType(fromRes, model);
     let deviceBrand = getDeviceBrand(brand);
     useDeviceId()(fromRes, toRes);
+    const { osName, osVersion } = getOSInfo(system, platform);
     toRes = sortObject(extend(toRes, {
       deviceType,
       deviceBrand,
-      deviceModel: model
+      deviceModel: model,
+      osName,
+      osVersion
     }));
   }
 };
@@ -1440,7 +1467,12 @@ const getAppBaseInfo = {
       appName: "pickercolor",
       appVersion: "1.0.0",
       appVersionCode: "100",
-      appLanguage: getAppLanguage(hostLanguage)
+      appLanguage: getAppLanguage(hostLanguage),
+      isUniAppX: false,
+      uniPlatform: "mp-weixin",
+      uniCompileVersion: "4.36",
+      uniCompilerVersion: "4.36",
+      uniRuntimeVersion: "4.36"
     }));
   }
 };
@@ -3515,9 +3547,6 @@ function flushPreFlushCbs(instance, seen, i2 = isFlushing ? flushIndex + 1 : 0) 
   for (; i2 < queue.length; i2++) {
     const cb = queue[i2];
     if (cb && cb.pre) {
-      if (instance && cb.id !== instance.uid) {
-        continue;
-      }
       if (checkRecursiveUpdates(seen, cb)) {
         continue;
       }
@@ -4692,8 +4721,13 @@ function applyOptions$1(instance) {
       }
     }
   }
-  if (injectOptions) {
-    resolveInjections(injectOptions, ctx, checkDuplicateProperties);
+  function initInjections() {
+    if (injectOptions) {
+      resolveInjections(injectOptions, ctx, checkDuplicateProperties);
+    }
+  }
+  {
+    initInjections();
   }
   if (methods) {
     for (const key in methods) {
@@ -4781,13 +4815,16 @@ function applyOptions$1(instance) {
       createWatcher(watchOptions[key], ctx, publicThis, key);
     }
   }
-  {
+  function initProvides() {
     if (provideOptions) {
       const provides = isFunction(provideOptions) ? provideOptions.call(publicThis) : provideOptions;
       Reflect.ownKeys(provides).forEach((key) => {
         provide(key, provides[key]);
       });
     }
+  }
+  {
+    initProvides();
   }
   {
     if (created) {
@@ -5074,11 +5111,6 @@ function initProps$1(instance, rawProps, isStateful, isSSR = false) {
   instance.attrs = attrs;
 }
 function isInHmrContext(instance) {
-  while (instance) {
-    if (instance.type.__hmrId)
-      return true;
-    instance = instance.parent;
-  }
 }
 function updateProps(instance, rawProps, rawPrevProps, optimized) {
   const {
@@ -5093,7 +5125,7 @@ function updateProps(instance, rawProps, rawPrevProps, optimized) {
     // always force full diff in dev
     // - #1942 if hmr is enabled with sfc component
     // - vite#872 non-sfc component used by sfc component
-    !isInHmrContext(instance) && (optimized || patchFlag > 0) && !(patchFlag & 16)
+    !isInHmrContext() && (optimized || patchFlag > 0) && !(patchFlag & 16)
   ) {
     if (patchFlag & 8) {
       const propsToUpdate = instance.vnode.dynamicProps;
@@ -5111,7 +5143,7 @@ function updateProps(instance, rawProps, rawPrevProps, optimized) {
             }
           } else {
             const camelizedKey = camelize(key);
-            props[camelizedKey] = resolvePropValue(
+            props[camelizedKey] = resolvePropValue$1(
               options,
               rawCurrentProps,
               camelizedKey,
@@ -5142,7 +5174,7 @@ function updateProps(instance, rawProps, rawPrevProps, optimized) {
           if (rawPrevProps && // for camelCase
           (rawPrevProps[key] !== void 0 || // for kebab-case
           rawPrevProps[kebabKey] !== void 0)) {
-            props[key] = resolvePropValue(
+            props[key] = resolvePropValue$1(
               options,
               rawCurrentProps,
               key,
@@ -5202,7 +5234,7 @@ function setFullProps(instance, rawProps, props, attrs) {
     const castValues = rawCastValues || EMPTY_OBJ;
     for (let i2 = 0; i2 < needCastKeys.length; i2++) {
       const key = needCastKeys[i2];
-      props[key] = resolvePropValue(
+      props[key] = resolvePropValue$1(
         options,
         rawCurrentProps,
         key,
@@ -5214,7 +5246,7 @@ function setFullProps(instance, rawProps, props, attrs) {
   }
   return hasAttrsChanged;
 }
-function resolvePropValue(options, props, key, value, instance, isAbsent) {
+function resolvePropValue$1(options, props, key, value, instance, isAbsent) {
   const opt = options[key];
   if (opt != null) {
     const hasDefault = hasOwn(opt, "default");
@@ -5595,7 +5627,12 @@ function createComponentInstance(vnode, parent, suspense) {
     rtg: null,
     rtc: null,
     ec: null,
-    sp: null
+    sp: null,
+    // fixed by xxxxxx 用于存储uni-app的元素缓存
+    $uniElements: /* @__PURE__ */ new Map(),
+    $templateUniElementRefs: [],
+    $templateUniElementStyles: {},
+    $eS: {}
   };
   {
     instance.ctx = createDevRenderContext(instance);
@@ -6092,6 +6129,7 @@ function patch(instance, data, oldData) {
     return;
   }
   data = deepCopy(data);
+  data.$eS = instance.$eS || {};
   const ctx = instance.ctx;
   const mpType = ctx.mpType;
   if (mpType === "page" || mpType === "component") {
@@ -6139,21 +6177,29 @@ function setRef$1(instance, isUnmount = false) {
   const {
     setupState,
     $templateRefs,
+    $templateUniElementRefs,
     ctx: { $scope, $mpPlatform }
   } = instance;
   if ($mpPlatform === "mp-alipay") {
     return;
   }
-  if (!$templateRefs || !$scope) {
+  if (!$scope || !$templateRefs && !$templateUniElementRefs) {
     return;
   }
   if (isUnmount) {
-    return $templateRefs.forEach(
+    $templateRefs && $templateRefs.forEach(
       (templateRef) => setTemplateRef(templateRef, null, setupState)
     );
+    $templateUniElementRefs && $templateUniElementRefs.forEach(
+      (templateRef) => setTemplateRef(templateRef, null, setupState)
+    );
+    return;
   }
   const check = $mpPlatform === "mp-baidu" || $mpPlatform === "mp-toutiao";
   const doSetByRefs = (refs) => {
+    if (refs.length === 0) {
+      return [];
+    }
     const mpComponents = (
       // 字节小程序 selectAllComponents 可能返回 null
       // https://github.com/dcloudio/uni-app/issues/3954
@@ -6171,13 +6217,28 @@ function setRef$1(instance, isUnmount = false) {
     });
   };
   const doSet = () => {
-    const refs = doSetByRefs($templateRefs);
-    if (refs.length && instance.proxy && instance.proxy.$scope) {
-      instance.proxy.$scope.setData({ r1: 1 }, () => {
-        doSetByRefs(refs);
-      });
+    if ($templateRefs) {
+      const refs = doSetByRefs($templateRefs);
+      if (refs.length && instance.proxy && instance.proxy.$scope) {
+        instance.proxy.$scope.setData({ r1: 1 }, () => {
+          doSetByRefs(refs);
+        });
+      }
     }
   };
+  if ($templateUniElementRefs && $templateUniElementRefs.length) {
+    nextTick(instance, () => {
+      $templateUniElementRefs.forEach((templateRef) => {
+        if (isArray(templateRef.v)) {
+          templateRef.v.forEach((v2) => {
+            setTemplateRef(templateRef, v2, setupState);
+          });
+        } else {
+          setTemplateRef(templateRef, templateRef.v, setupState);
+        }
+      });
+    });
+  }
   if ($scope._$setRef) {
     $scope._$setRef(doSet);
   } else {
@@ -6223,7 +6284,9 @@ function setTemplateRef({ r: r2, f: f2 }, refValue, setupState) {
           if (!refValue) {
             return;
           }
-          onBeforeUnmount(() => remove(existing, refValue), refValue.$);
+          if (refValue.$) {
+            onBeforeUnmount(() => remove(existing, refValue), refValue.$);
+          }
         }
       } else if (_isString) {
         if (hasOwn(setupState, r2)) {
@@ -6313,7 +6376,10 @@ function renderComponentRoot(instance) {
     },
     inheritAttrs
   } = instance;
+  instance.$uniElementIds = /* @__PURE__ */ new Map();
   instance.$templateRefs = [];
+  instance.$templateUniElementRefs = [];
+  instance.$templateUniElementStyles = {};
   instance.$ei = 0;
   pruneComponentPropsCache2(uid2);
   instance.__counter = instance.__counter === 0 ? 1 : 0;
@@ -6477,12 +6543,25 @@ function setupRenderEffect(instance) {
     effect2.onTrigger = instance.rtg ? (e2) => invokeArrayFns$1(instance.rtg, e2) : void 0;
     update.ownerInstance = instance;
   }
-  update();
+  {
+    update();
+  }
 }
 function unmountComponent(instance) {
   const { bum, scope, update, um } = instance;
   if (bum) {
     invokeArrayFns$1(bum);
+  }
+  {
+    const parentInstance = instance.parent;
+    if (parentInstance) {
+      const $children = parentInstance.ctx.$children;
+      const target = getExposeProxy(instance) || instance.proxy;
+      const index2 = $children.indexOf(target);
+      if (index2 > -1) {
+        $children.splice(index2, 1);
+      }
+    }
   }
   scope.stop();
   if (update) {
@@ -6767,6 +6846,11 @@ function createInvoker(initialValue, instance) {
   const invoker = (e2) => {
     patchMPEvent(e2);
     let args = [e2];
+    if (instance && instance.ctx.$getTriggerEventDetail) {
+      if (typeof e2.detail === "number") {
+        e2.detail = instance.ctx.$getTriggerEventDetail(e2.detail);
+      }
+    }
     if (e2.detail && e2.detail.__args__) {
       args = e2.detail.__args__;
     }
@@ -6894,6 +6978,93 @@ function createApp$1(rootComponent, rootProps = null) {
   return createVueApp(rootComponent, rootProps).use(plugin);
 }
 const createSSRApp = createApp$1;
+function initVueIds(vueIds, mpInstance) {
+  if (!vueIds) {
+    return;
+  }
+  const ids = vueIds.split(",");
+  const len = ids.length;
+  if (len === 1) {
+    mpInstance._$vueId = ids[0];
+  } else if (len === 2) {
+    mpInstance._$vueId = ids[0];
+    mpInstance._$vuePid = ids[1];
+  }
+}
+const EXTRAS = ["externalClasses"];
+function initExtraOptions(miniProgramComponentOptions, vueOptions) {
+  EXTRAS.forEach((name) => {
+    if (hasOwn(vueOptions, name)) {
+      miniProgramComponentOptions[name] = vueOptions[name];
+    }
+  });
+}
+const WORKLET_RE = /_(.*)_worklet_factory_/;
+function initWorkletMethods(mpMethods, vueMethods) {
+  if (vueMethods) {
+    Object.keys(vueMethods).forEach((name) => {
+      const matches = name.match(WORKLET_RE);
+      if (matches) {
+        const workletName = matches[1];
+        mpMethods[name] = vueMethods[name];
+        mpMethods[workletName] = vueMethods[workletName];
+      }
+    });
+  }
+}
+function initWxsCallMethods(methods, wxsCallMethods) {
+  if (!isArray(wxsCallMethods)) {
+    return;
+  }
+  wxsCallMethods.forEach((callMethod) => {
+    methods[callMethod] = function(args) {
+      return this.$vm[callMethod](args);
+    };
+  });
+}
+function selectAllComponents(mpInstance, selector, $refs) {
+  const components = mpInstance.selectAllComponents(selector);
+  components.forEach((component) => {
+    const ref2 = component.properties.uR;
+    $refs[ref2] = component.$vm || component;
+  });
+}
+function initRefs(instance, mpInstance) {
+  Object.defineProperty(instance, "refs", {
+    get() {
+      const $refs = {};
+      selectAllComponents(mpInstance, ".r", $refs);
+      const forComponents = mpInstance.selectAllComponents(".r-i-f");
+      forComponents.forEach((component) => {
+        const ref2 = component.properties.uR;
+        if (!ref2) {
+          return;
+        }
+        if (!$refs[ref2]) {
+          $refs[ref2] = [];
+        }
+        $refs[ref2].push(component.$vm || component);
+      });
+      return $refs;
+    }
+  });
+}
+function findVmByVueId(instance, vuePid) {
+  const $children = instance.$children;
+  for (let i2 = $children.length - 1; i2 >= 0; i2--) {
+    const childVm = $children[i2];
+    if (childVm.$scope._$vueId === vuePid) {
+      return childVm;
+    }
+  }
+  let parentVm;
+  for (let i2 = $children.length - 1; i2 >= 0; i2--) {
+    parentVm = findVmByVueId($children[i2], vuePid);
+    if (parentVm) {
+      return parentVm;
+    }
+  }
+}
 const MP_METHODS = [
   "createSelectorQuery",
   "createIntersectionObserver",
@@ -7073,7 +7244,7 @@ function parseApp(instance, parseAppOptions) {
     onLaunch(options) {
       this.$vm = instance;
       const ctx = internalInstance.ctx;
-      if (this.$vm && ctx.$scope) {
+      if (this.$vm && ctx.$scope && ctx.$callHook) {
         return;
       }
       initBaseInstance(internalInstance, {
@@ -7099,19 +7270,16 @@ function parseApp(instance, parseAppOptions) {
     const methods = vueOptions.methods;
     methods && extend(appOptions, methods);
   }
-  if (parseAppOptions) {
-    parseAppOptions.parse(appOptions);
-  }
   return appOptions;
 }
 function initCreateApp(parseAppOptions) {
   return function createApp2(vm) {
-    return App(parseApp(vm, parseAppOptions));
+    return App(parseApp(vm));
   };
 }
 function initCreateSubpackageApp(parseAppOptions) {
   return function createApp2(vm) {
-    const appOptions = parseApp(vm, parseAppOptions);
+    const appOptions = parseApp(vm);
     const app = isFunction(getApp) && getApp({
       allowDefault: true
     });
@@ -7161,93 +7329,6 @@ function initLocale(appVm) {
     }
   });
 }
-function initVueIds(vueIds, mpInstance) {
-  if (!vueIds) {
-    return;
-  }
-  const ids = vueIds.split(",");
-  const len = ids.length;
-  if (len === 1) {
-    mpInstance._$vueId = ids[0];
-  } else if (len === 2) {
-    mpInstance._$vueId = ids[0];
-    mpInstance._$vuePid = ids[1];
-  }
-}
-const EXTRAS = ["externalClasses"];
-function initExtraOptions(miniProgramComponentOptions, vueOptions) {
-  EXTRAS.forEach((name) => {
-    if (hasOwn(vueOptions, name)) {
-      miniProgramComponentOptions[name] = vueOptions[name];
-    }
-  });
-}
-const WORKLET_RE = /_(.*)_worklet_factory_/;
-function initWorkletMethods(mpMethods, vueMethods) {
-  if (vueMethods) {
-    Object.keys(vueMethods).forEach((name) => {
-      const matches = name.match(WORKLET_RE);
-      if (matches) {
-        const workletName = matches[1];
-        mpMethods[name] = vueMethods[name];
-        mpMethods[workletName] = vueMethods[workletName];
-      }
-    });
-  }
-}
-function initWxsCallMethods(methods, wxsCallMethods) {
-  if (!isArray(wxsCallMethods)) {
-    return;
-  }
-  wxsCallMethods.forEach((callMethod) => {
-    methods[callMethod] = function(args) {
-      return this.$vm[callMethod](args);
-    };
-  });
-}
-function selectAllComponents(mpInstance, selector, $refs) {
-  const components = mpInstance.selectAllComponents(selector);
-  components.forEach((component) => {
-    const ref2 = component.properties.uR;
-    $refs[ref2] = component.$vm || component;
-  });
-}
-function initRefs(instance, mpInstance) {
-  Object.defineProperty(instance, "refs", {
-    get() {
-      const $refs = {};
-      selectAllComponents(mpInstance, ".r", $refs);
-      const forComponents = mpInstance.selectAllComponents(".r-i-f");
-      forComponents.forEach((component) => {
-        const ref2 = component.properties.uR;
-        if (!ref2) {
-          return;
-        }
-        if (!$refs[ref2]) {
-          $refs[ref2] = [];
-        }
-        $refs[ref2].push(component.$vm || component);
-      });
-      return $refs;
-    }
-  });
-}
-function findVmByVueId(instance, vuePid) {
-  const $children = instance.$children;
-  for (let i2 = $children.length - 1; i2 >= 0; i2--) {
-    const childVm = $children[i2];
-    if (childVm.$scope._$vueId === vuePid) {
-      return childVm;
-    }
-  }
-  let parentVm;
-  for (let i2 = $children.length - 1; i2 >= 0; i2--) {
-    parentVm = findVmByVueId($children[i2], vuePid);
-    if (parentVm) {
-      return parentVm;
-    }
-  }
-}
 const builtInProps = [
   // 百度小程序,快手小程序自定义组件不支持绑定动态事件，动态dataset，故通过props传递事件信息
   // event-opts
@@ -7268,6 +7349,15 @@ const builtInProps = [
 function initDefaultProps(options, isBehavior = false) {
   const properties = {};
   if (!isBehavior) {
+    let observerSlots = function(newVal) {
+      const $slots = /* @__PURE__ */ Object.create(null);
+      newVal && newVal.forEach((slotName) => {
+        $slots[slotName] = true;
+      });
+      this.setData({
+        $slots
+      });
+    };
     builtInProps.forEach((name) => {
       properties[name] = {
         type: null,
@@ -7276,17 +7366,11 @@ function initDefaultProps(options, isBehavior = false) {
     });
     properties.uS = {
       type: null,
-      value: [],
-      observer: function(newVal) {
-        const $slots = /* @__PURE__ */ Object.create(null);
-        newVal && newVal.forEach((slotName) => {
-          $slots[slotName] = true;
-        });
-        this.setData({
-          $slots
-        });
-      }
+      value: []
     };
+    {
+      properties.uS.observer = observerSlots;
+    }
   }
   if (options.behaviors) {
     if (options.behaviors.includes("wx://form-field")) {
@@ -7370,14 +7454,14 @@ function initPageProps({ properties }, rawProps) {
   }
 }
 function findPropsData(properties, isPage2) {
-  return (isPage2 ? findPagePropsData(properties) : findComponentPropsData(properties.uP)) || {};
+  return (isPage2 ? findPagePropsData(properties) : findComponentPropsData(resolvePropValue(properties.uP))) || {};
 }
 function findPagePropsData(properties) {
   const propsData = {};
   if (isPlainObject$1(properties)) {
     Object.keys(properties).forEach((name) => {
       if (builtInProps.indexOf(name) === -1) {
-        propsData[name] = properties[name];
+        propsData[name] = resolvePropValue(properties[name]);
       }
     });
   }
@@ -7396,6 +7480,9 @@ function initFormField(vm) {
     });
   }
 }
+function resolvePropValue(prop) {
+  return prop;
+}
 function initData(_2) {
   return {};
 }
@@ -7406,9 +7493,9 @@ function initPropsObserver(componentOptions) {
       return;
     }
     if (this.$vm) {
-      updateComponentProps(up, this.$vm.$);
-    } else if (this.properties.uT === "m") {
-      updateMiniProgramComponentProperties(up, this);
+      updateComponentProps(resolvePropValue(up), this.$vm.$);
+    } else if (resolvePropValue(this.properties.uT) === "m") {
+      updateMiniProgramComponentProperties(resolvePropValue(up), this);
     }
   };
   {
@@ -7592,7 +7679,7 @@ function initCreatePage(parseOptions2) {
 }
 function initCreatePluginApp(parseAppOptions) {
   return function createApp2(vm) {
-    initAppLifecycle(parseApp(vm, parseAppOptions), vm);
+    initAppLifecycle(parseApp(vm), vm);
   };
 }
 const MPPage = Page;
@@ -7600,7 +7687,10 @@ const MPComponent = Component;
 function initTriggerEvent(mpInstance) {
   const oldTriggerEvent = mpInstance.triggerEvent;
   const newTriggerEvent = function(event, ...args) {
-    return oldTriggerEvent.apply(mpInstance, [customizeEvent(event), ...args]);
+    return oldTriggerEvent.apply(mpInstance, [
+      customizeEvent(event),
+      ...args
+    ]);
   };
   try {
     mpInstance.triggerEvent = newTriggerEvent;
@@ -8518,6 +8608,13 @@ const pages = [
       navigationBarTitleText: "Models",
       enablePullDownRefresh: false
     }
+  },
+  {
+    path: "pages/models/pred",
+    style: {
+      navigationBarTitleText: "Predict",
+      enablePullDownRefresh: false
+    }
   }
 ];
 const tabBar = {
@@ -8849,73 +8946,73 @@ try {
   O = "";
 } catch (e2) {
 }
-let E = {};
-function L(e2, t2 = {}) {
+let L = {};
+function R(e2, t2 = {}) {
   var n2, s2;
-  return n2 = E, s2 = e2, Object.prototype.hasOwnProperty.call(n2, s2) || (E[e2] = t2), E[e2];
+  return n2 = L, s2 = e2, Object.prototype.hasOwnProperty.call(n2, s2) || (L[e2] = t2), L[e2];
 }
-const R = ["invoke", "success", "fail", "complete"], U = L("_globalUniCloudInterceptor");
-function N(e2, t2) {
-  U[e2] || (U[e2] = {}), g(t2) && Object.keys(t2).forEach((n2) => {
-    R.indexOf(n2) > -1 && function(e3, t3, n3) {
-      let s2 = U[e3][t3];
-      s2 || (s2 = U[e3][t3] = []), -1 === s2.indexOf(n3) && m(n3) && s2.push(n3);
+const N = ["invoke", "success", "fail", "complete"], D = R("_globalUniCloudInterceptor");
+function q(e2, t2) {
+  D[e2] || (D[e2] = {}), g(t2) && Object.keys(t2).forEach((n2) => {
+    N.indexOf(n2) > -1 && function(e3, t3, n3) {
+      let s2 = D[e3][t3];
+      s2 || (s2 = D[e3][t3] = []), -1 === s2.indexOf(n3) && m(n3) && s2.push(n3);
     }(e2, n2, t2[n2]);
   });
 }
-function D(e2, t2) {
-  U[e2] || (U[e2] = {}), g(t2) ? Object.keys(t2).forEach((n2) => {
-    R.indexOf(n2) > -1 && function(e3, t3, n3) {
-      const s2 = U[e3][t3];
+function M(e2, t2) {
+  D[e2] || (D[e2] = {}), g(t2) ? Object.keys(t2).forEach((n2) => {
+    N.indexOf(n2) > -1 && function(e3, t3, n3) {
+      const s2 = D[e3][t3];
       if (!s2)
         return;
       const r2 = s2.indexOf(n3);
       r2 > -1 && s2.splice(r2, 1);
     }(e2, n2, t2[n2]);
-  }) : delete U[e2];
+  }) : delete D[e2];
 }
-function M(e2, t2) {
+function F(e2, t2) {
   return e2 && 0 !== e2.length ? e2.reduce((e3, n2) => e3.then(() => n2(t2)), Promise.resolve()) : Promise.resolve();
 }
-function q(e2, t2) {
-  return U[e2] && U[e2][t2] || [];
+function K(e2, t2) {
+  return D[e2] && D[e2][t2] || [];
 }
-function F(e2) {
-  N("callObject", e2);
+function j(e2) {
+  q("callObject", e2);
 }
-const K = L("_globalUniCloudListener"), j = "response", $ = "needLogin", B = "refreshToken", W = "clientdb", H = "cloudfunction", J = "cloudobject";
-function z(e2) {
-  return K[e2] || (K[e2] = []), K[e2];
-}
-function V(e2, t2) {
-  const n2 = z(e2);
-  n2.includes(t2) || n2.push(t2);
-}
-function G(e2, t2) {
-  const n2 = z(e2), s2 = n2.indexOf(t2);
-  -1 !== s2 && n2.splice(s2, 1);
+const $ = R("_globalUniCloudListener"), B = "response", W = "needLogin", H = "refreshToken", J = "clientdb", z = "cloudfunction", V = "cloudobject";
+function G(e2) {
+  return $[e2] || ($[e2] = []), $[e2];
 }
 function Y(e2, t2) {
-  const n2 = z(e2);
+  const n2 = G(e2);
+  n2.includes(t2) || n2.push(t2);
+}
+function Q(e2, t2) {
+  const n2 = G(e2), s2 = n2.indexOf(t2);
+  -1 !== s2 && n2.splice(s2, 1);
+}
+function X(e2, t2) {
+  const n2 = G(e2);
   for (let e3 = 0; e3 < n2.length; e3++) {
     (0, n2[e3])(t2);
   }
 }
-let Q, X = false;
-function Z() {
-  return Q || (Q = new Promise((e2) => {
-    X && e2(), function t2() {
+let Z, ee = false;
+function te() {
+  return Z || (Z = new Promise((e2) => {
+    ee && e2(), function t2() {
       if ("function" == typeof getCurrentPages) {
         const t3 = getCurrentPages();
-        t3 && t3[0] && (X = true, e2());
+        t3 && t3[0] && (ee = true, e2());
       }
-      X || setTimeout(() => {
+      ee || setTimeout(() => {
         t2();
       }, 30);
     }();
-  }), Q);
+  }), Z);
 }
-function ee(e2) {
+function ne(e2) {
   const t2 = {};
   for (const n2 in e2) {
     const s2 = e2[n2];
@@ -8923,7 +9020,7 @@ function ee(e2) {
   }
   return t2;
 }
-class te extends Error {
+class se extends Error {
   constructor(e2) {
     super(e2.message), this.errMsg = e2.message || e2.errMsg || "unknown system error", this.code = this.errCode = e2.code || e2.errCode || "SYSTEM_ERROR", this.errSubject = this.subject = e2.subject || e2.errSubject, this.cause = e2.cause, this.requestId = e2.requestId;
   }
@@ -8932,21 +9029,21 @@ class te extends Error {
       return e2++, { errCode: this.errCode, errMsg: this.errMsg, errSubject: this.errSubject, cause: this.cause && this.cause.toJson ? this.cause.toJson(e2) : this.cause };
   }
 }
-var ne = { request: (e2) => index.request(e2), uploadFile: (e2) => index.uploadFile(e2), setStorageSync: (e2, t2) => index.setStorageSync(e2, t2), getStorageSync: (e2) => index.getStorageSync(e2), removeStorageSync: (e2) => index.removeStorageSync(e2), clearStorageSync: () => index.clearStorageSync(), connectSocket: (e2) => index.connectSocket(e2) };
-function se(e2) {
-  return e2 && se(e2.__v_raw) || e2;
+var re = { request: (e2) => index.request(e2), uploadFile: (e2) => index.uploadFile(e2), setStorageSync: (e2, t2) => index.setStorageSync(e2, t2), getStorageSync: (e2) => index.getStorageSync(e2), removeStorageSync: (e2) => index.removeStorageSync(e2), clearStorageSync: () => index.clearStorageSync(), connectSocket: (e2) => index.connectSocket(e2) };
+function ie(e2) {
+  return e2 && ie(e2.__v_raw) || e2;
 }
-function re() {
-  return { token: ne.getStorageSync("uni_id_token") || ne.getStorageSync("uniIdToken"), tokenExpired: ne.getStorageSync("uni_id_token_expired") };
+function oe() {
+  return { token: re.getStorageSync("uni_id_token") || re.getStorageSync("uniIdToken"), tokenExpired: re.getStorageSync("uni_id_token_expired") };
 }
-function ie({ token: e2, tokenExpired: t2 } = {}) {
-  e2 && ne.setStorageSync("uni_id_token", e2), t2 && ne.setStorageSync("uni_id_token_expired", t2);
+function ae({ token: e2, tokenExpired: t2 } = {}) {
+  e2 && re.setStorageSync("uni_id_token", e2), t2 && re.setStorageSync("uni_id_token_expired", t2);
 }
-let oe, ae;
-function ce() {
-  return oe || (oe = index.getSystemInfoSync()), oe;
+let ce, ue;
+function le() {
+  return ce || (ce = index.getSystemInfoSync()), ce;
 }
-function ue() {
+function he() {
   let e2, t2;
   try {
     if (index.getLaunchOptionsSync) {
@@ -8959,17 +9056,17 @@ function ue() {
   }
   return { channel: e2, scene: t2 };
 }
-let le = {};
-function he() {
+let de = {};
+function pe() {
   const e2 = index.getLocale && index.getLocale() || "en";
-  if (ae)
-    return { ...le, ...ae, locale: e2, LOCALE: e2 };
-  const t2 = ce(), { deviceId: n2, osName: s2, uniPlatform: r2, appId: i2 } = t2, o2 = ["appId", "appLanguage", "appName", "appVersion", "appVersionCode", "appWgtVersion", "browserName", "browserVersion", "deviceBrand", "deviceId", "deviceModel", "deviceType", "osName", "osVersion", "romName", "romVersion", "ua", "hostName", "hostVersion", "uniPlatform", "uniRuntimeVersion", "uniRuntimeVersionCode", "uniCompilerVersion", "uniCompilerVersionCode"];
+  if (ue)
+    return { ...de, ...ue, locale: e2, LOCALE: e2 };
+  const t2 = le(), { deviceId: n2, osName: s2, uniPlatform: r2, appId: i2 } = t2, o2 = ["appId", "appLanguage", "appName", "appVersion", "appVersionCode", "appWgtVersion", "browserName", "browserVersion", "deviceBrand", "deviceId", "deviceModel", "deviceType", "osName", "osVersion", "romName", "romVersion", "ua", "hostName", "hostVersion", "uniPlatform", "uniRuntimeVersion", "uniRuntimeVersionCode", "uniCompilerVersion", "uniCompilerVersionCode"];
   for (const e3 in t2)
     Object.hasOwnProperty.call(t2, e3) && -1 === o2.indexOf(e3) && delete t2[e3];
-  return ae = { PLATFORM: r2, OS: s2, APPID: i2, DEVICEID: n2, ...ue(), ...t2 }, { ...le, ...ae, locale: e2, LOCALE: e2 };
+  return ue = { PLATFORM: r2, OS: s2, APPID: i2, DEVICEID: n2, ...he(), ...t2 }, { ...de, ...ue, locale: e2, LOCALE: e2 };
 }
-var de = { sign: function(e2, t2) {
+var fe = { sign: function(e2, t2) {
   let n2 = "";
   return Object.keys(e2).sort().forEach(function(t3) {
     e2[t3] && (n2 = n2 + "&" + t3 + "=" + e2[t3]);
@@ -8981,25 +9078,25 @@ var de = { sign: function(e2, t2) {
       const t3 = e3.data && e3.data.header && e3.data.header["x-serverless-request-id"] || e3.header && e3.header["request-id"];
       if (!e3.statusCode || e3.statusCode >= 400) {
         const n3 = e3.data && e3.data.error && e3.data.error.code || "SYS_ERR", r3 = e3.data && e3.data.error && e3.data.error.message || e3.errMsg || "request:fail";
-        return s2(new te({ code: n3, message: r3, requestId: t3 }));
+        return s2(new se({ code: n3, message: r3, requestId: t3 }));
       }
       const r2 = e3.data;
       if (r2.error)
-        return s2(new te({ code: r2.error.code, message: r2.error.message, requestId: t3 }));
+        return s2(new se({ code: r2.error.code, message: r2.error.message, requestId: t3 }));
       r2.result = r2.data, r2.requestId = t3, delete r2.data, n2(r2);
     } }));
   });
 }, toBase64: function(e2) {
   return a.stringify(o.parse(e2));
 } };
-var pe = class {
+var ge = class {
   constructor(e2) {
     ["spaceId", "clientSecret"].forEach((t2) => {
       if (!Object.prototype.hasOwnProperty.call(e2, t2))
         throw new Error(`${t2} required`);
-    }), this.config = Object.assign({}, { endpoint: 0 === e2.spaceId.indexOf("mp-") ? "https://api.next.bspapp.com" : "https://api.bspapp.com" }, e2), this.config.provider = "aliyun", this.config.requestUrl = this.config.endpoint + "/client", this.config.envType = this.config.envType || "public", this.config.accessTokenKey = "access_token_" + this.config.spaceId, this.adapter = ne, this._getAccessTokenPromiseHub = new v({ createPromise: () => this.requestAuth(this.setupRequest({ method: "serverless.auth.user.anonymousAuthorize", params: "{}" }, "auth")).then((e3) => {
+    }), this.config = Object.assign({}, { endpoint: 0 === e2.spaceId.indexOf("mp-") ? "https://api.next.bspapp.com" : "https://api.bspapp.com" }, e2), this.config.provider = "aliyun", this.config.requestUrl = this.config.endpoint + "/client", this.config.envType = this.config.envType || "public", this.config.accessTokenKey = "access_token_" + this.config.spaceId, this.adapter = re, this._getAccessTokenPromiseHub = new v({ createPromise: () => this.requestAuth(this.setupRequest({ method: "serverless.auth.user.anonymousAuthorize", params: "{}" }, "auth")).then((e3) => {
       if (!e3.result || !e3.result.accessToken)
-        throw new te({ code: "AUTH_FAILED", message: "获取accessToken失败" });
+        throw new se({ code: "AUTH_FAILED", message: "获取accessToken失败" });
       this.setAccessToken(e3.result.accessToken);
     }), retryRule: w });
   }
@@ -9010,7 +9107,7 @@ var pe = class {
     this.accessToken = e2;
   }
   requestWrapped(e2) {
-    return de.wrappedRequest(e2, this.adapter.request);
+    return fe.wrappedRequest(e2, this.adapter.request);
   }
   requestAuth(e2) {
     return this.requestWrapped(e2);
@@ -9028,11 +9125,11 @@ var pe = class {
   }
   rebuildRequest(e2) {
     const t2 = Object.assign({}, e2);
-    return t2.data.token = this.accessToken, t2.header["x-basement-token"] = this.accessToken, t2.header["x-serverless-sign"] = de.sign(t2.data, this.config.clientSecret), t2;
+    return t2.data.token = this.accessToken, t2.header["x-basement-token"] = this.accessToken, t2.header["x-serverless-sign"] = fe.sign(t2.data, this.config.clientSecret), t2;
   }
   setupRequest(e2, t2) {
     const n2 = Object.assign({}, e2, { spaceId: this.config.spaceId, timestamp: Date.now() }), s2 = { "Content-Type": "application/json" };
-    return "auth" !== t2 && (n2.token = this.accessToken, s2["x-basement-token"] = this.accessToken), s2["x-serverless-sign"] = de.sign(n2, this.config.clientSecret), { url: this.config.requestUrl, method: "POST", data: n2, dataType: "json", header: s2 };
+    return "auth" !== t2 && (n2.token = this.accessToken, s2["x-basement-token"] = this.accessToken), s2["x-serverless-sign"] = fe.sign(n2, this.config.clientSecret), { url: this.config.requestUrl, method: "POST", data: n2, dataType: "json", header: s2 };
   }
   getAccessToken() {
     return this._getAccessTokenPromiseHub.exec();
@@ -9051,9 +9148,9 @@ var pe = class {
   uploadFileToOSS({ url: e2, formData: t2, name: n2, filePath: s2, fileType: r2, onUploadProgress: i2 }) {
     return new Promise((o2, a2) => {
       const c2 = this.adapter.uploadFile({ url: e2, formData: t2, name: n2, filePath: s2, fileType: r2, header: { "X-OSS-server-side-encrpytion": "AES256" }, success(e3) {
-        e3 && e3.statusCode < 400 ? o2(e3) : a2(new te({ code: "UPLOAD_FAILED", message: "文件上传失败" }));
+        e3 && e3.statusCode < 400 ? o2(e3) : a2(new se({ code: "UPLOAD_FAILED", message: "文件上传失败" }));
       }, fail(e3) {
-        a2(new te({ code: e3.code || "UPLOAD_FAILED", message: e3.message || e3.errMsg || "文件上传失败" }));
+        a2(new se({ code: e3.code || "UPLOAD_FAILED", message: e3.message || e3.errMsg || "文件上传失败" }));
       } });
       "function" == typeof i2 && c2 && "function" == typeof c2.onProgressUpdate && c2.onProgressUpdate((e3) => {
         i2({ loaded: e3.totalBytesSent, total: e3.totalBytesExpectedToSend });
@@ -9066,40 +9163,40 @@ var pe = class {
   }
   async uploadFile({ filePath: e2, cloudPath: t2, fileType: n2 = "image", cloudPathAsRealPath: s2 = false, onUploadProgress: r2, config: i2 }) {
     if ("string" !== f(t2))
-      throw new te({ code: "INVALID_PARAM", message: "cloudPath必须为字符串类型" });
+      throw new se({ code: "INVALID_PARAM", message: "cloudPath必须为字符串类型" });
     if (!(t2 = t2.trim()))
-      throw new te({ code: "INVALID_PARAM", message: "cloudPath不可为空" });
+      throw new se({ code: "INVALID_PARAM", message: "cloudPath不可为空" });
     if (/:\/\//.test(t2))
-      throw new te({ code: "INVALID_PARAM", message: "cloudPath不合法" });
+      throw new se({ code: "INVALID_PARAM", message: "cloudPath不合法" });
     const o2 = i2 && i2.envType || this.config.envType;
     if (s2 && ("/" !== t2[0] && (t2 = "/" + t2), t2.indexOf("\\") > -1))
-      throw new te({ code: "INVALID_PARAM", message: "使用cloudPath作为路径时，cloudPath不可包含“\\”" });
+      throw new se({ code: "INVALID_PARAM", message: "使用cloudPath作为路径时，cloudPath不可包含“\\”" });
     const a2 = (await this.getOSSUploadOptionsFromPath({ env: o2, filename: s2 ? t2.split("/").pop() : t2, fileId: s2 ? t2 : void 0 })).result, c2 = "https://" + a2.cdnDomain + "/" + a2.ossPath, { securityToken: u2, accessKeyId: l2, signature: h2, host: d2, ossPath: p2, id: g2, policy: m2, ossCallbackUrl: y2 } = a2, _2 = { "Cache-Control": "max-age=2592000", "Content-Disposition": "attachment", OSSAccessKeyId: l2, Signature: h2, host: d2, id: g2, key: p2, policy: m2, success_action_status: 200 };
     if (u2 && (_2["x-oss-security-token"] = u2), y2) {
       const e3 = JSON.stringify({ callbackUrl: y2, callbackBody: JSON.stringify({ fileId: g2, spaceId: this.config.spaceId }), callbackBodyType: "application/json" });
-      _2.callback = de.toBase64(e3);
+      _2.callback = fe.toBase64(e3);
     }
     const w2 = { url: "https://" + a2.host, formData: _2, fileName: "file", name: "file", filePath: e2, fileType: n2 };
     if (await this.uploadFileToOSS(Object.assign({}, w2, { onUploadProgress: r2 })), y2)
       return { success: true, filePath: e2, fileID: c2 };
     if ((await this.reportOSSUpload({ id: g2 })).success)
       return { success: true, filePath: e2, fileID: c2 };
-    throw new te({ code: "UPLOAD_FAILED", message: "文件上传失败" });
+    throw new se({ code: "UPLOAD_FAILED", message: "文件上传失败" });
   }
   getTempFileURL({ fileList: e2 } = {}) {
     return new Promise((t2, n2) => {
-      Array.isArray(e2) && 0 !== e2.length || n2(new te({ code: "INVALID_PARAM", message: "fileList的元素必须是非空的字符串" })), t2({ fileList: e2.map((e3) => ({ fileID: e3, tempFileURL: e3 })) });
+      Array.isArray(e2) && 0 !== e2.length || n2(new se({ code: "INVALID_PARAM", message: "fileList的元素必须是非空的字符串" })), t2({ fileList: e2.map((e3) => ({ fileID: e3, tempFileURL: e3 })) });
     });
   }
   async getFileInfo({ fileList: e2 } = {}) {
     if (!Array.isArray(e2) || 0 === e2.length)
-      throw new te({ code: "INVALID_PARAM", message: "fileList的元素必须是非空的字符串" });
+      throw new se({ code: "INVALID_PARAM", message: "fileList的元素必须是非空的字符串" });
     const t2 = { method: "serverless.file.resource.info", params: JSON.stringify({ id: e2.map((e3) => e3.split("?")[0]).join(",") }) };
     return { fileList: (await this.request(this.setupRequest(t2))).result };
   }
 };
-var fe = { init(e2) {
-  const t2 = new pe(e2), n2 = { signInAnonymously: function() {
+var me = { init(e2) {
+  const t2 = new ge(e2), n2 = { signInAnonymously: function() {
     return t2.authorize();
   }, getLoginState: function() {
     return Promise.resolve(false);
@@ -9108,13 +9205,13 @@ var fe = { init(e2) {
     return n2;
   }, t2.customAuth = t2.auth, t2;
 } };
-const ge = "undefined" != typeof location && "http:" === location.protocol ? "http:" : "https:";
-var me;
+const ye = "undefined" != typeof location && "http:" === location.protocol ? "http:" : "https:";
+var _e;
 !function(e2) {
   e2.local = "local", e2.none = "none", e2.session = "session";
-}(me || (me = {}));
-var ye = function() {
-}, _e = n(function(e2, t2) {
+}(_e || (_e = {}));
+var we = function() {
+}, ve = n(function(e2, t2) {
   var n2;
   e2.exports = (n2 = r, function(e3) {
     var t3 = n2, s2 = t3.lib, r2 = s2.WordArray, i2 = s2.Hasher, o2 = t3.algo, a2 = [], c2 = [];
@@ -9154,16 +9251,16 @@ var ye = function() {
     } });
     t3.SHA256 = i2._createHelper(l2), t3.HmacSHA256 = i2._createHmacHelper(l2);
   }(Math), n2.SHA256);
-}), we = _e, ve = n(function(e2, t2) {
+}), Ie = ve, Se = n(function(e2, t2) {
   e2.exports = r.HmacSHA256;
 });
-const Ie = () => {
+const be = () => {
   let e2;
   if (!Promise) {
     e2 = () => {
     }, e2.promise = {};
     const t3 = () => {
-      throw new te({ message: 'Your Node runtime does support ES6 Promises. Set "global.Promise" to your preferred implementation of promises.' });
+      throw new se({ message: 'Your Node runtime does support ES6 Promises. Set "global.Promise" to your preferred implementation of promises.' });
     };
     return Object.defineProperty(e2.promise, "then", { get: t3 }), Object.defineProperty(e2.promise, "catch", { get: t3 }), e2;
   }
@@ -9172,14 +9269,17 @@ const Ie = () => {
   });
   return e2.promise = t2, e2;
 };
-function Se(e2) {
+function ke(e2) {
   return void 0 === e2;
 }
-function be(e2) {
+function Ae(e2) {
   return "[object Null]" === Object.prototype.toString.call(e2);
 }
-var ke;
-function Ae(e2) {
+function Ce(e2 = "") {
+  return e2.replace(/([\s\S]+)\s+(请前往云开发AI小助手查看问题：.*)/, "$1");
+}
+var Pe;
+function Te(e2) {
   const t2 = (n2 = e2, "[object Array]" === Object.prototype.toString.call(n2) ? e2 : [e2]);
   var n2;
   for (const e3 of t2) {
@@ -9190,39 +9290,39 @@ function Ae(e2) {
 }
 !function(e2) {
   e2.WEB = "web", e2.WX_MP = "wx_mp";
-}(ke || (ke = {}));
-const Ce = { adapter: null, runtime: void 0 }, Pe = ["anonymousUuidKey"];
-class Te extends ye {
+}(Pe || (Pe = {}));
+const xe = { adapter: null, runtime: void 0 }, Oe = ["anonymousUuidKey"];
+class Ee extends we {
   constructor() {
-    super(), Ce.adapter.root.tcbObject || (Ce.adapter.root.tcbObject = {});
+    super(), xe.adapter.root.tcbObject || (xe.adapter.root.tcbObject = {});
   }
   setItem(e2, t2) {
-    Ce.adapter.root.tcbObject[e2] = t2;
+    xe.adapter.root.tcbObject[e2] = t2;
   }
   getItem(e2) {
-    return Ce.adapter.root.tcbObject[e2];
+    return xe.adapter.root.tcbObject[e2];
   }
   removeItem(e2) {
-    delete Ce.adapter.root.tcbObject[e2];
+    delete xe.adapter.root.tcbObject[e2];
   }
   clear() {
-    delete Ce.adapter.root.tcbObject;
+    delete xe.adapter.root.tcbObject;
   }
 }
-function xe(e2, t2) {
+function Le(e2, t2) {
   switch (e2) {
     case "local":
-      return t2.localStorage || new Te();
+      return t2.localStorage || new Ee();
     case "none":
-      return new Te();
+      return new Ee();
     default:
-      return t2.sessionStorage || new Te();
+      return t2.sessionStorage || new Ee();
   }
 }
-class Oe {
+class Re {
   constructor(e2) {
     if (!this._storage) {
-      this._persistence = Ce.adapter.primaryStorage || e2.persistence, this._storage = xe(this._persistence, Ce.adapter);
+      this._persistence = xe.adapter.primaryStorage || e2.persistence, this._storage = Le(this._persistence, xe.adapter);
       const t2 = `access_token_${e2.env}`, n2 = `access_token_expire_${e2.env}`, s2 = `refresh_token_${e2.env}`, r2 = `anonymous_uuid_${e2.env}`, i2 = `login_type_${e2.env}`, o2 = `user_info_${e2.env}`;
       this.keys = { accessTokenKey: t2, accessTokenExpireKey: n2, refreshTokenKey: s2, anonymousUuidKey: r2, loginTypeKey: i2, userInfoKey: o2 };
     }
@@ -9232,13 +9332,13 @@ class Oe {
       return;
     const t2 = "local" === this._persistence;
     this._persistence = e2;
-    const n2 = xe(e2, Ce.adapter);
+    const n2 = Le(e2, xe.adapter);
     for (const e3 in this.keys) {
       const s2 = this.keys[e3];
-      if (t2 && Pe.includes(e3))
+      if (t2 && Oe.includes(e3))
         continue;
       const r2 = this._storage.getItem(s2);
-      Se(r2) || be(r2) || (n2.setItem(s2, r2), this._storage.removeItem(s2));
+      ke(r2) || Ae(r2) || (n2.setItem(s2, r2), this._storage.removeItem(s2));
     }
     this._storage = n2;
   }
@@ -9272,21 +9372,21 @@ class Oe {
     this._storage.removeItem(e2);
   }
 }
-const Ee = {}, Le = {};
-function Re(e2) {
-  return Ee[e2];
+const Ue = {}, Ne = {};
+function De(e2) {
+  return Ue[e2];
 }
-class Ue {
+class qe {
   constructor(e2, t2) {
     this.data = t2 || null, this.name = e2;
   }
 }
-class Ne extends Ue {
+class Me extends qe {
   constructor(e2, t2) {
     super("error", { error: e2, data: t2 }), this.error = e2;
   }
 }
-const De = new class {
+const Fe = new class {
   constructor() {
     this._listeners = {};
   }
@@ -9304,9 +9404,9 @@ const De = new class {
     }(e2, t2, this._listeners), this;
   }
   fire(e2, t2) {
-    if (e2 instanceof Ne)
+    if (e2 instanceof Me)
       return console.error(e2.error), this;
-    const n2 = "string" == typeof e2 ? new Ue(e2, t2 || {}) : e2;
+    const n2 = "string" == typeof e2 ? new qe(e2, t2 || {}) : e2;
     const s2 = n2.name;
     if (this._listens(s2)) {
       n2.target = this;
@@ -9320,22 +9420,22 @@ const De = new class {
     return this._listeners[e2] && this._listeners[e2].length > 0;
   }
 }();
-function Me(e2, t2) {
-  De.on(e2, t2);
+function Ke(e2, t2) {
+  Fe.on(e2, t2);
 }
-function qe(e2, t2 = {}) {
-  De.fire(e2, t2);
+function je(e2, t2 = {}) {
+  Fe.fire(e2, t2);
 }
-function Fe(e2, t2) {
-  De.off(e2, t2);
+function $e(e2, t2) {
+  Fe.off(e2, t2);
 }
-const Ke = "loginStateChanged", je = "loginStateExpire", $e = "loginTypeChanged", Be = "anonymousConverted", We = "refreshAccessToken";
-var He;
+const Be = "loginStateChanged", We = "loginStateExpire", He = "loginTypeChanged", Je = "anonymousConverted", ze = "refreshAccessToken";
+var Ve;
 !function(e2) {
   e2.ANONYMOUS = "ANONYMOUS", e2.WECHAT = "WECHAT", e2.WECHAT_PUBLIC = "WECHAT-PUBLIC", e2.WECHAT_OPEN = "WECHAT-OPEN", e2.CUSTOM = "CUSTOM", e2.EMAIL = "EMAIL", e2.USERNAME = "USERNAME", e2.NULL = "NULL";
-}(He || (He = {}));
-const Je = ["auth.getJwt", "auth.logout", "auth.signInWithTicket", "auth.signInAnonymously", "auth.signIn", "auth.fetchAccessTokenWithRefreshToken", "auth.signUpWithEmailAndPassword", "auth.activateEndUserMail", "auth.sendPasswordResetEmail", "auth.resetPasswordWithToken", "auth.isUsernameRegistered"], ze = { "X-SDK-Version": "1.3.5" };
-function Ve(e2, t2, n2) {
+}(Ve || (Ve = {}));
+const Ge = ["auth.getJwt", "auth.logout", "auth.signInWithTicket", "auth.signInAnonymously", "auth.signIn", "auth.fetchAccessTokenWithRefreshToken", "auth.signUpWithEmailAndPassword", "auth.activateEndUserMail", "auth.sendPasswordResetEmail", "auth.resetPasswordWithToken", "auth.isUsernameRegistered"], Ye = { "X-SDK-Version": "1.3.5" };
+function Qe(e2, t2, n2) {
   const s2 = e2[t2];
   e2[t2] = function(t3) {
     const r2 = {}, i2 = {};
@@ -9354,14 +9454,14 @@ function Ve(e2, t2, n2) {
     })(), t3.headers = { ...t3.headers || {}, ...i2 }, s2.call(e2, t3);
   };
 }
-function Ge() {
+function Xe() {
   const e2 = Math.random().toString(16).slice(2);
-  return { data: { seqId: e2 }, headers: { ...ze, "x-seqid": e2 } };
+  return { data: { seqId: e2 }, headers: { ...Ye, "x-seqid": e2 } };
 }
-class Ye {
+class Ze {
   constructor(e2 = {}) {
     var t2;
-    this.config = e2, this._reqClass = new Ce.adapter.reqClass({ timeout: this.config.timeout, timeoutMsg: `请求在${this.config.timeout / 1e3}s内未完成，已中断`, restrictedMethods: ["post"] }), this._cache = Re(this.config.env), this._localCache = (t2 = this.config.env, Le[t2]), Ve(this._reqClass, "post", [Ge]), Ve(this._reqClass, "upload", [Ge]), Ve(this._reqClass, "download", [Ge]);
+    this.config = e2, this._reqClass = new xe.adapter.reqClass({ timeout: this.config.timeout, timeoutMsg: `请求在${this.config.timeout / 1e3}s内未完成，已中断`, restrictedMethods: ["post"] }), this._cache = De(this.config.env), this._localCache = (t2 = this.config.env, Ne[t2]), Qe(this._reqClass, "post", [Xe]), Qe(this._reqClass, "upload", [Xe]), Qe(this._reqClass, "download", [Xe]);
   }
   async post(e2) {
     return await this._reqClass.post(e2);
@@ -9389,27 +9489,27 @@ class Ye {
     this._cache.removeStore(e2), this._cache.removeStore(t2);
     let i2 = this._cache.getStore(n2);
     if (!i2)
-      throw new te({ message: "未登录CloudBase" });
+      throw new se({ message: "未登录CloudBase" });
     const o2 = { refresh_token: i2 }, a2 = await this.request("auth.fetchAccessTokenWithRefreshToken", o2);
     if (a2.data.code) {
       const { code: e3 } = a2.data;
       if ("SIGN_PARAM_INVALID" === e3 || "REFRESH_TOKEN_EXPIRED" === e3 || "INVALID_REFRESH_TOKEN" === e3) {
-        if (this._cache.getStore(s2) === He.ANONYMOUS && "INVALID_REFRESH_TOKEN" === e3) {
+        if (this._cache.getStore(s2) === Ve.ANONYMOUS && "INVALID_REFRESH_TOKEN" === e3) {
           const e4 = this._cache.getStore(r2), t3 = this._cache.getStore(n2), s3 = await this.send("auth.signInAnonymously", { anonymous_uuid: e4, refresh_token: t3 });
           return this.setRefreshToken(s3.refresh_token), this._refreshAccessToken();
         }
-        qe(je), this._cache.removeStore(n2);
+        je(We), this._cache.removeStore(n2);
       }
-      throw new te({ code: a2.data.code, message: `刷新access token失败：${a2.data.code}` });
+      throw new se({ code: a2.data.code, message: `刷新access token失败：${a2.data.code}` });
     }
     if (a2.data.access_token)
-      return qe(We), this._cache.setStore(e2, a2.data.access_token), this._cache.setStore(t2, a2.data.access_token_expire + Date.now()), { accessToken: a2.data.access_token, accessTokenExpire: a2.data.access_token_expire };
+      return je(ze), this._cache.setStore(e2, a2.data.access_token), this._cache.setStore(t2, a2.data.access_token_expire + Date.now()), { accessToken: a2.data.access_token, accessTokenExpire: a2.data.access_token_expire };
     a2.data.refresh_token && (this._cache.removeStore(n2), this._cache.setStore(n2, a2.data.refresh_token), this._refreshAccessToken());
   }
   async getAccessToken() {
     const { accessTokenKey: e2, accessTokenExpireKey: t2, refreshTokenKey: n2 } = this._cache.keys;
     if (!this._cache.getStore(n2))
-      throw new te({ message: "refresh token不存在，登录状态异常" });
+      throw new se({ message: "refresh token不存在，登录状态异常" });
     let s2 = this._cache.getStore(e2), r2 = this._cache.getStore(t2), i2 = true;
     return this._shouldRefreshAccessTokenHook && !await this._shouldRefreshAccessTokenHook(s2, r2) && (i2 = false), (!s2 || !r2 || r2 < Date.now()) && i2 ? this.refreshAccessToken() : { accessToken: s2, accessTokenExpire: r2 };
   }
@@ -9417,7 +9517,7 @@ class Ye {
     const s2 = `x-tcb-trace_${this.config.env}`;
     let r2 = "application/x-www-form-urlencoded";
     const i2 = { action: e2, env: this.config.env, dataVersion: "2019-08-16", ...t2 };
-    if (-1 === Je.indexOf(e2)) {
+    if (-1 === Ge.indexOf(e2)) {
       const { refreshTokenKey: e3 } = this._cache.keys;
       this._cache.getStore(e3) && (i2.access_token = (await this.getAccessToken()).accessToken);
     }
@@ -9445,24 +9545,24 @@ class Ye {
       for (let e4 in n3)
         "" === r3 ? !s3 && (t3 += "?") : r3 += "&", r3 += `${e4}=${encodeURIComponent(n3[e4])}`;
       return /^http(s)?\:\/\//.test(t3 += r3) ? t3 : `${e3}${t3}`;
-    }(ge, "//tcb-api.tencentcloudapi.com/web", d2);
+    }(ye, "//tcb-api.tencentcloudapi.com/web", d2);
     h2 && (p2 += h2);
     const f2 = await this.post({ url: p2, data: o2, ...a2 }), g2 = f2.header && f2.header["x-tcb-trace"];
     if (g2 && this._localCache.setStore(s2, g2), 200 !== Number(f2.status) && 200 !== Number(f2.statusCode) || !f2.data)
-      throw new te({ code: "NETWORK_ERROR", message: "network request error" });
+      throw new se({ code: "NETWORK_ERROR", message: "network request error" });
     return f2;
   }
   async send(e2, t2 = {}, n2 = {}) {
     const s2 = await this.request(e2, t2, { ...n2, onUploadProgress: t2.onUploadProgress });
-    if ("ACCESS_TOKEN_EXPIRED" === s2.data.code && -1 === Je.indexOf(e2)) {
+    if ("ACCESS_TOKEN_EXPIRED" === s2.data.code && -1 === Ge.indexOf(e2)) {
       await this.refreshAccessToken();
       const s3 = await this.request(e2, t2, { ...n2, onUploadProgress: t2.onUploadProgress });
       if (s3.data.code)
-        throw new te({ code: s3.data.code, message: s3.data.message });
+        throw new se({ code: s3.data.code, message: Ce(s3.data.message) });
       return s3.data;
     }
     if (s2.data.code)
-      throw new te({ code: s2.data.code, message: s2.data.message });
+      throw new se({ code: s2.data.code, message: Ce(s2.data.message) });
     return s2.data;
   }
   setRefreshToken(e2) {
@@ -9470,13 +9570,13 @@ class Ye {
     this._cache.removeStore(t2), this._cache.removeStore(n2), this._cache.setStore(s2, e2);
   }
 }
-const Qe = {};
-function Xe(e2) {
-  return Qe[e2];
+const et = {};
+function tt(e2) {
+  return et[e2];
 }
-class Ze {
+class nt {
   constructor(e2) {
-    this.config = e2, this._cache = Re(e2.env), this._request = Xe(e2.env);
+    this.config = e2, this._cache = De(e2.env), this._request = tt(e2.env);
   }
   setRefreshToken(e2) {
     const { accessTokenKey: t2, accessTokenExpireKey: n2, refreshTokenKey: s2 } = this._cache.keys;
@@ -9495,15 +9595,15 @@ class Ze {
     this._cache.setStore(t2, e2);
   }
 }
-class et {
+class st {
   constructor(e2) {
     if (!e2)
-      throw new te({ code: "PARAM_ERROR", message: "envId is not defined" });
-    this._envId = e2, this._cache = Re(this._envId), this._request = Xe(this._envId), this.setUserInfo();
+      throw new se({ code: "PARAM_ERROR", message: "envId is not defined" });
+    this._envId = e2, this._cache = De(this._envId), this._request = tt(this._envId), this.setUserInfo();
   }
   linkWithTicket(e2) {
     if ("string" != typeof e2)
-      throw new te({ code: "PARAM_ERROR", message: "ticket must be string" });
+      throw new se({ code: "PARAM_ERROR", message: "ticket must be string" });
     return this._request.send("auth.linkWithTicket", { ticket: e2 });
   }
   linkWithRedirect(e2) {
@@ -9517,7 +9617,7 @@ class et {
   }
   updateUsername(e2) {
     if ("string" != typeof e2)
-      throw new te({ code: "PARAM_ERROR", message: "username must be a string" });
+      throw new se({ code: "PARAM_ERROR", message: "username must be a string" });
     return this._request.send("auth.updateUsername", { username: e2 });
   }
   async getLinkedUidList() {
@@ -9553,70 +9653,70 @@ class et {
     this._cache.setStore(t2, e2), this.setUserInfo();
   }
 }
-class tt {
+class rt {
   constructor(e2) {
     if (!e2)
-      throw new te({ code: "PARAM_ERROR", message: "envId is not defined" });
-    this._cache = Re(e2);
+      throw new se({ code: "PARAM_ERROR", message: "envId is not defined" });
+    this._cache = De(e2);
     const { refreshTokenKey: t2, accessTokenKey: n2, accessTokenExpireKey: s2 } = this._cache.keys, r2 = this._cache.getStore(t2), i2 = this._cache.getStore(n2), o2 = this._cache.getStore(s2);
-    this.credential = { refreshToken: r2, accessToken: i2, accessTokenExpire: o2 }, this.user = new et(e2);
+    this.credential = { refreshToken: r2, accessToken: i2, accessTokenExpire: o2 }, this.user = new st(e2);
   }
   get isAnonymousAuth() {
-    return this.loginType === He.ANONYMOUS;
+    return this.loginType === Ve.ANONYMOUS;
   }
   get isCustomAuth() {
-    return this.loginType === He.CUSTOM;
+    return this.loginType === Ve.CUSTOM;
   }
   get isWeixinAuth() {
-    return this.loginType === He.WECHAT || this.loginType === He.WECHAT_OPEN || this.loginType === He.WECHAT_PUBLIC;
+    return this.loginType === Ve.WECHAT || this.loginType === Ve.WECHAT_OPEN || this.loginType === Ve.WECHAT_PUBLIC;
   }
   get loginType() {
     return this._cache.getStore(this._cache.keys.loginTypeKey);
   }
 }
-class nt extends Ze {
+class it extends nt {
   async signIn() {
     this._cache.updatePersistence("local");
     const { anonymousUuidKey: e2, refreshTokenKey: t2 } = this._cache.keys, n2 = this._cache.getStore(e2) || void 0, s2 = this._cache.getStore(t2) || void 0, r2 = await this._request.send("auth.signInAnonymously", { anonymous_uuid: n2, refresh_token: s2 });
     if (r2.uuid && r2.refresh_token) {
-      this._setAnonymousUUID(r2.uuid), this.setRefreshToken(r2.refresh_token), await this._request.refreshAccessToken(), qe(Ke), qe($e, { env: this.config.env, loginType: He.ANONYMOUS, persistence: "local" });
-      const e3 = new tt(this.config.env);
+      this._setAnonymousUUID(r2.uuid), this.setRefreshToken(r2.refresh_token), await this._request.refreshAccessToken(), je(Be), je(He, { env: this.config.env, loginType: Ve.ANONYMOUS, persistence: "local" });
+      const e3 = new rt(this.config.env);
       return await e3.user.refresh(), e3;
     }
-    throw new te({ message: "匿名登录失败" });
+    throw new se({ message: "匿名登录失败" });
   }
   async linkAndRetrieveDataWithTicket(e2) {
     const { anonymousUuidKey: t2, refreshTokenKey: n2 } = this._cache.keys, s2 = this._cache.getStore(t2), r2 = this._cache.getStore(n2), i2 = await this._request.send("auth.linkAndRetrieveDataWithTicket", { anonymous_uuid: s2, refresh_token: r2, ticket: e2 });
     if (i2.refresh_token)
-      return this._clearAnonymousUUID(), this.setRefreshToken(i2.refresh_token), await this._request.refreshAccessToken(), qe(Be, { env: this.config.env }), qe($e, { loginType: He.CUSTOM, persistence: "local" }), { credential: { refreshToken: i2.refresh_token } };
-    throw new te({ message: "匿名转化失败" });
+      return this._clearAnonymousUUID(), this.setRefreshToken(i2.refresh_token), await this._request.refreshAccessToken(), je(Je, { env: this.config.env }), je(He, { loginType: Ve.CUSTOM, persistence: "local" }), { credential: { refreshToken: i2.refresh_token } };
+    throw new se({ message: "匿名转化失败" });
   }
   _setAnonymousUUID(e2) {
     const { anonymousUuidKey: t2, loginTypeKey: n2 } = this._cache.keys;
-    this._cache.removeStore(t2), this._cache.setStore(t2, e2), this._cache.setStore(n2, He.ANONYMOUS);
+    this._cache.removeStore(t2), this._cache.setStore(t2, e2), this._cache.setStore(n2, Ve.ANONYMOUS);
   }
   _clearAnonymousUUID() {
     this._cache.removeStore(this._cache.keys.anonymousUuidKey);
   }
 }
-class st extends Ze {
+class ot extends nt {
   async signIn(e2) {
     if ("string" != typeof e2)
-      throw new te({ code: "PARAM_ERROR", message: "ticket must be a string" });
+      throw new se({ code: "PARAM_ERROR", message: "ticket must be a string" });
     const { refreshTokenKey: t2 } = this._cache.keys, n2 = await this._request.send("auth.signInWithTicket", { ticket: e2, refresh_token: this._cache.getStore(t2) || "" });
     if (n2.refresh_token)
-      return this.setRefreshToken(n2.refresh_token), await this._request.refreshAccessToken(), qe(Ke), qe($e, { env: this.config.env, loginType: He.CUSTOM, persistence: this.config.persistence }), await this.refreshUserInfo(), new tt(this.config.env);
-    throw new te({ message: "自定义登录失败" });
+      return this.setRefreshToken(n2.refresh_token), await this._request.refreshAccessToken(), je(Be), je(He, { env: this.config.env, loginType: Ve.CUSTOM, persistence: this.config.persistence }), await this.refreshUserInfo(), new rt(this.config.env);
+    throw new se({ message: "自定义登录失败" });
   }
 }
-class rt extends Ze {
+class at extends nt {
   async signIn(e2, t2) {
     if ("string" != typeof e2)
-      throw new te({ code: "PARAM_ERROR", message: "email must be a string" });
+      throw new se({ code: "PARAM_ERROR", message: "email must be a string" });
     const { refreshTokenKey: n2 } = this._cache.keys, s2 = await this._request.send("auth.signIn", { loginType: "EMAIL", email: e2, password: t2, refresh_token: this._cache.getStore(n2) || "" }), { refresh_token: r2, access_token: i2, access_token_expire: o2 } = s2;
     if (r2)
-      return this.setRefreshToken(r2), i2 && o2 ? this.setAccessToken(i2, o2) : await this._request.refreshAccessToken(), await this.refreshUserInfo(), qe(Ke), qe($e, { env: this.config.env, loginType: He.EMAIL, persistence: this.config.persistence }), new tt(this.config.env);
-    throw s2.code ? new te({ code: s2.code, message: `邮箱登录失败: ${s2.message}` }) : new te({ message: "邮箱登录失败" });
+      return this.setRefreshToken(r2), i2 && o2 ? this.setAccessToken(i2, o2) : await this._request.refreshAccessToken(), await this.refreshUserInfo(), je(Be), je(He, { env: this.config.env, loginType: Ve.EMAIL, persistence: this.config.persistence }), new rt(this.config.env);
+    throw s2.code ? new se({ code: s2.code, message: `邮箱登录失败: ${s2.message}` }) : new se({ message: "邮箱登录失败" });
   }
   async activate(e2) {
     return this._request.send("auth.activateEndUserMail", { token: e2 });
@@ -9625,20 +9725,20 @@ class rt extends Ze {
     return this._request.send("auth.resetPasswordWithToken", { token: e2, newPassword: t2 });
   }
 }
-class it extends Ze {
+class ct extends nt {
   async signIn(e2, t2) {
     if ("string" != typeof e2)
-      throw new te({ code: "PARAM_ERROR", message: "username must be a string" });
+      throw new se({ code: "PARAM_ERROR", message: "username must be a string" });
     "string" != typeof t2 && (t2 = "", console.warn("password is empty"));
-    const { refreshTokenKey: n2 } = this._cache.keys, s2 = await this._request.send("auth.signIn", { loginType: He.USERNAME, username: e2, password: t2, refresh_token: this._cache.getStore(n2) || "" }), { refresh_token: r2, access_token_expire: i2, access_token: o2 } = s2;
+    const { refreshTokenKey: n2 } = this._cache.keys, s2 = await this._request.send("auth.signIn", { loginType: Ve.USERNAME, username: e2, password: t2, refresh_token: this._cache.getStore(n2) || "" }), { refresh_token: r2, access_token_expire: i2, access_token: o2 } = s2;
     if (r2)
-      return this.setRefreshToken(r2), o2 && i2 ? this.setAccessToken(o2, i2) : await this._request.refreshAccessToken(), await this.refreshUserInfo(), qe(Ke), qe($e, { env: this.config.env, loginType: He.USERNAME, persistence: this.config.persistence }), new tt(this.config.env);
-    throw s2.code ? new te({ code: s2.code, message: `用户名密码登录失败: ${s2.message}` }) : new te({ message: "用户名密码登录失败" });
+      return this.setRefreshToken(r2), o2 && i2 ? this.setAccessToken(o2, i2) : await this._request.refreshAccessToken(), await this.refreshUserInfo(), je(Be), je(He, { env: this.config.env, loginType: Ve.USERNAME, persistence: this.config.persistence }), new rt(this.config.env);
+    throw s2.code ? new se({ code: s2.code, message: `用户名密码登录失败: ${s2.message}` }) : new se({ message: "用户名密码登录失败" });
   }
 }
-class ot {
+class ut {
   constructor(e2) {
-    this.config = e2, this._cache = Re(e2.env), this._request = Xe(e2.env), this._onAnonymousConverted = this._onAnonymousConverted.bind(this), this._onLoginTypeChanged = this._onLoginTypeChanged.bind(this), Me($e, this._onLoginTypeChanged);
+    this.config = e2, this._cache = De(e2.env), this._request = tt(e2.env), this._onAnonymousConverted = this._onAnonymousConverted.bind(this), this._onLoginTypeChanged = this._onLoginTypeChanged.bind(this), Ke(He, this._onLoginTypeChanged);
   }
   get currentUser() {
     const e2 = this.hasLoginState();
@@ -9648,38 +9748,38 @@ class ot {
     return this._cache.getStore(this._cache.keys.loginTypeKey);
   }
   anonymousAuthProvider() {
-    return new nt(this.config);
-  }
-  customAuthProvider() {
-    return new st(this.config);
-  }
-  emailAuthProvider() {
-    return new rt(this.config);
-  }
-  usernameAuthProvider() {
     return new it(this.config);
   }
+  customAuthProvider() {
+    return new ot(this.config);
+  }
+  emailAuthProvider() {
+    return new at(this.config);
+  }
+  usernameAuthProvider() {
+    return new ct(this.config);
+  }
   async signInAnonymously() {
-    return new nt(this.config).signIn();
+    return new it(this.config).signIn();
   }
   async signInWithEmailAndPassword(e2, t2) {
-    return new rt(this.config).signIn(e2, t2);
+    return new at(this.config).signIn(e2, t2);
   }
   signInWithUsernameAndPassword(e2, t2) {
-    return new it(this.config).signIn(e2, t2);
+    return new ct(this.config).signIn(e2, t2);
   }
   async linkAndRetrieveDataWithTicket(e2) {
-    this._anonymousAuthProvider || (this._anonymousAuthProvider = new nt(this.config)), Me(Be, this._onAnonymousConverted);
+    this._anonymousAuthProvider || (this._anonymousAuthProvider = new it(this.config)), Ke(Je, this._onAnonymousConverted);
     return await this._anonymousAuthProvider.linkAndRetrieveDataWithTicket(e2);
   }
   async signOut() {
-    if (this.loginType === He.ANONYMOUS)
-      throw new te({ message: "匿名用户不支持登出操作" });
+    if (this.loginType === Ve.ANONYMOUS)
+      throw new se({ message: "匿名用户不支持登出操作" });
     const { refreshTokenKey: e2, accessTokenKey: t2, accessTokenExpireKey: n2 } = this._cache.keys, s2 = this._cache.getStore(e2);
     if (!s2)
       return;
     const r2 = await this._request.send("auth.logout", { refresh_token: s2 });
-    return this._cache.removeStore(e2), this._cache.removeStore(t2), this._cache.removeStore(n2), qe(Ke), qe($e, { env: this.config.env, loginType: He.NULL, persistence: this.config.persistence }), r2;
+    return this._cache.removeStore(e2), this._cache.removeStore(t2), this._cache.removeStore(n2), je(Be), je(He, { env: this.config.env, loginType: Ve.NULL, persistence: this.config.persistence }), r2;
   }
   async signUpWithEmailAndPassword(e2, t2) {
     return this._request.send("auth.signUpWithEmailAndPassword", { email: e2, password: t2 });
@@ -9688,7 +9788,7 @@ class ot {
     return this._request.send("auth.sendPasswordResetEmail", { email: e2 });
   }
   onLoginStateChanged(e2) {
-    Me(Ke, () => {
+    Ke(Be, () => {
       const t3 = this.hasLoginState();
       e2.call(this, t3);
     });
@@ -9696,16 +9796,16 @@ class ot {
     e2.call(this, t2);
   }
   onLoginStateExpired(e2) {
-    Me(je, e2.bind(this));
+    Ke(We, e2.bind(this));
   }
   onAccessTokenRefreshed(e2) {
-    Me(We, e2.bind(this));
+    Ke(ze, e2.bind(this));
   }
   onAnonymousConverted(e2) {
-    Me(Be, e2.bind(this));
+    Ke(Je, e2.bind(this));
   }
   onLoginTypeChanged(e2) {
-    Me($e, () => {
+    Ke(He, () => {
       const t2 = this.hasLoginState();
       e2.call(this, t2);
     });
@@ -9715,11 +9815,11 @@ class ot {
   }
   hasLoginState() {
     const { refreshTokenKey: e2 } = this._cache.keys;
-    return this._cache.getStore(e2) ? new tt(this.config.env) : null;
+    return this._cache.getStore(e2) ? new rt(this.config.env) : null;
   }
   async isUsernameRegistered(e2) {
     if ("string" != typeof e2)
-      throw new te({ code: "PARAM_ERROR", message: "username must be a string" });
+      throw new se({ code: "PARAM_ERROR", message: "username must be a string" });
     const { data: t2 } = await this._request.send("auth.isUsernameRegistered", { username: e2 });
     return t2 && t2.isRegistered;
   }
@@ -9727,7 +9827,7 @@ class ot {
     return Promise.resolve(this.hasLoginState());
   }
   async signInWithTicket(e2) {
-    return new st(this.config).signIn(e2);
+    return new ot(this.config).signIn(e2);
   }
   shouldRefreshAccessToken(e2) {
     this._request._shouldRefreshAccessTokenHook = e2.bind(this);
@@ -9748,63 +9848,63 @@ class ot {
     s2 === this.config.env && (this._cache.updatePersistence(n2), this._cache.setStore(this._cache.keys.loginTypeKey, t2));
   }
 }
-const at = function(e2, t2) {
-  t2 = t2 || Ie();
-  const n2 = Xe(this.config.env), { cloudPath: s2, filePath: r2, onUploadProgress: i2, fileType: o2 = "image" } = e2;
+const lt = function(e2, t2) {
+  t2 = t2 || be();
+  const n2 = tt(this.config.env), { cloudPath: s2, filePath: r2, onUploadProgress: i2, fileType: o2 = "image" } = e2;
   return n2.send("storage.getUploadMetadata", { path: s2 }).then((e3) => {
     const { data: { url: a2, authorization: c2, token: u2, fileId: l2, cosFileId: h2 }, requestId: d2 } = e3, p2 = { key: s2, signature: c2, "x-cos-meta-fileid": h2, success_action_status: "201", "x-cos-security-token": u2 };
     n2.upload({ url: a2, data: p2, file: r2, name: s2, fileType: o2, onUploadProgress: i2 }).then((e4) => {
-      201 === e4.statusCode ? t2(null, { fileID: l2, requestId: d2 }) : t2(new te({ code: "STORAGE_REQUEST_FAIL", message: `STORAGE_REQUEST_FAIL: ${e4.data}` }));
+      201 === e4.statusCode ? t2(null, { fileID: l2, requestId: d2 }) : t2(new se({ code: "STORAGE_REQUEST_FAIL", message: `STORAGE_REQUEST_FAIL: ${e4.data}` }));
     }).catch((e4) => {
       t2(e4);
     });
   }).catch((e3) => {
     t2(e3);
   }), t2.promise;
-}, ct = function(e2, t2) {
-  t2 = t2 || Ie();
-  const n2 = Xe(this.config.env), { cloudPath: s2 } = e2;
+}, ht = function(e2, t2) {
+  t2 = t2 || be();
+  const n2 = tt(this.config.env), { cloudPath: s2 } = e2;
   return n2.send("storage.getUploadMetadata", { path: s2 }).then((e3) => {
     t2(null, e3);
   }).catch((e3) => {
     t2(e3);
   }), t2.promise;
-}, ut = function({ fileList: e2 }, t2) {
-  if (t2 = t2 || Ie(), !e2 || !Array.isArray(e2))
+}, dt = function({ fileList: e2 }, t2) {
+  if (t2 = t2 || be(), !e2 || !Array.isArray(e2))
     return { code: "INVALID_PARAM", message: "fileList必须是非空的数组" };
   for (let t3 of e2)
     if (!t3 || "string" != typeof t3)
       return { code: "INVALID_PARAM", message: "fileList的元素必须是非空的字符串" };
   const n2 = { fileid_list: e2 };
-  return Xe(this.config.env).send("storage.batchDeleteFile", n2).then((e3) => {
+  return tt(this.config.env).send("storage.batchDeleteFile", n2).then((e3) => {
     e3.code ? t2(null, e3) : t2(null, { fileList: e3.data.delete_list, requestId: e3.requestId });
   }).catch((e3) => {
     t2(e3);
   }), t2.promise;
-}, lt = function({ fileList: e2 }, t2) {
-  t2 = t2 || Ie(), e2 && Array.isArray(e2) || t2(null, { code: "INVALID_PARAM", message: "fileList必须是非空的数组" });
+}, pt = function({ fileList: e2 }, t2) {
+  t2 = t2 || be(), e2 && Array.isArray(e2) || t2(null, { code: "INVALID_PARAM", message: "fileList必须是非空的数组" });
   let n2 = [];
   for (let s3 of e2)
     "object" == typeof s3 ? (s3.hasOwnProperty("fileID") && s3.hasOwnProperty("maxAge") || t2(null, { code: "INVALID_PARAM", message: "fileList的元素必须是包含fileID和maxAge的对象" }), n2.push({ fileid: s3.fileID, max_age: s3.maxAge })) : "string" == typeof s3 ? n2.push({ fileid: s3 }) : t2(null, { code: "INVALID_PARAM", message: "fileList的元素必须是字符串" });
   const s2 = { file_list: n2 };
-  return Xe(this.config.env).send("storage.batchGetDownloadUrl", s2).then((e3) => {
+  return tt(this.config.env).send("storage.batchGetDownloadUrl", s2).then((e3) => {
     e3.code ? t2(null, e3) : t2(null, { fileList: e3.data.download_list, requestId: e3.requestId });
   }).catch((e3) => {
     t2(e3);
   }), t2.promise;
-}, ht = async function({ fileID: e2 }, t2) {
-  const n2 = (await lt.call(this, { fileList: [{ fileID: e2, maxAge: 600 }] })).fileList[0];
+}, ft = async function({ fileID: e2 }, t2) {
+  const n2 = (await pt.call(this, { fileList: [{ fileID: e2, maxAge: 600 }] })).fileList[0];
   if ("SUCCESS" !== n2.code)
     return t2 ? t2(n2) : new Promise((e3) => {
       e3(n2);
     });
-  const s2 = Xe(this.config.env);
+  const s2 = tt(this.config.env);
   let r2 = n2.download_url;
   if (r2 = encodeURI(r2), !t2)
     return s2.download({ url: r2 });
   t2(await s2.download({ url: r2 }));
-}, dt = function({ name: e2, data: t2, query: n2, parse: s2, search: r2, timeout: i2 }, o2) {
-  const a2 = o2 || Ie();
+}, gt = function({ name: e2, data: t2, query: n2, parse: s2, search: r2, timeout: i2 }, o2) {
+  const a2 = o2 || be();
   let c2;
   try {
     c2 = t2 ? JSON.stringify(t2) : "";
@@ -9812,9 +9912,9 @@ const at = function(e2, t2) {
     return Promise.reject(e3);
   }
   if (!e2)
-    return Promise.reject(new te({ code: "PARAM_ERROR", message: "函数名不能为空" }));
+    return Promise.reject(new se({ code: "PARAM_ERROR", message: "函数名不能为空" }));
   const u2 = { inQuery: n2, parse: s2, search: r2, function_name: e2, request_data: c2 };
-  return Xe(this.config.env).send("functions.invokeFunction", u2, { timeout: i2 }).then((e3) => {
+  return tt(this.config.env).send("functions.invokeFunction", u2, { timeout: i2 }).then((e3) => {
     if (e3.code)
       a2(null, e3);
     else {
@@ -9825,89 +9925,89 @@ const at = function(e2, t2) {
         try {
           t3 = JSON.parse(e3.data.response_data), a2(null, { result: t3, requestId: e3.requestId });
         } catch (e4) {
-          a2(new te({ message: "response data must be json" }));
+          a2(new se({ message: "response data must be json" }));
         }
     }
     return a2.promise;
   }).catch((e3) => {
     a2(e3);
   }), a2.promise;
-}, pt = { timeout: 15e3, persistence: "session" }, ft = {};
-class gt {
+}, mt = { timeout: 15e3, persistence: "session" }, yt = {};
+class _t {
   constructor(e2) {
     this.config = e2 || this.config, this.authObj = void 0;
   }
   init(e2) {
-    switch (Ce.adapter || (this.requestClient = new Ce.adapter.reqClass({ timeout: e2.timeout || 5e3, timeoutMsg: `请求在${(e2.timeout || 5e3) / 1e3}s内未完成，已中断` })), this.config = { ...pt, ...e2 }, true) {
+    switch (xe.adapter || (this.requestClient = new xe.adapter.reqClass({ timeout: e2.timeout || 5e3, timeoutMsg: `请求在${(e2.timeout || 5e3) / 1e3}s内未完成，已中断` })), this.config = { ...mt, ...e2 }, true) {
       case this.config.timeout > 6e5:
         console.warn("timeout大于可配置上限[10分钟]，已重置为上限数值"), this.config.timeout = 6e5;
         break;
       case this.config.timeout < 100:
         console.warn("timeout小于可配置下限[100ms]，已重置为下限数值"), this.config.timeout = 100;
     }
-    return new gt(this.config);
+    return new _t(this.config);
   }
   auth({ persistence: e2 } = {}) {
     if (this.authObj)
       return this.authObj;
-    const t2 = e2 || Ce.adapter.primaryStorage || pt.persistence;
+    const t2 = e2 || xe.adapter.primaryStorage || mt.persistence;
     var n2;
     return t2 !== this.config.persistence && (this.config.persistence = t2), function(e3) {
       const { env: t3 } = e3;
-      Ee[t3] = new Oe(e3), Le[t3] = new Oe({ ...e3, persistence: "local" });
-    }(this.config), n2 = this.config, Qe[n2.env] = new Ye(n2), this.authObj = new ot(this.config), this.authObj;
+      Ue[t3] = new Re(e3), Ne[t3] = new Re({ ...e3, persistence: "local" });
+    }(this.config), n2 = this.config, et[n2.env] = new Ze(n2), this.authObj = new ut(this.config), this.authObj;
   }
   on(e2, t2) {
-    return Me.apply(this, [e2, t2]);
+    return Ke.apply(this, [e2, t2]);
   }
   off(e2, t2) {
-    return Fe.apply(this, [e2, t2]);
+    return $e.apply(this, [e2, t2]);
   }
   callFunction(e2, t2) {
-    return dt.apply(this, [e2, t2]);
+    return gt.apply(this, [e2, t2]);
   }
   deleteFile(e2, t2) {
-    return ut.apply(this, [e2, t2]);
+    return dt.apply(this, [e2, t2]);
   }
   getTempFileURL(e2, t2) {
-    return lt.apply(this, [e2, t2]);
+    return pt.apply(this, [e2, t2]);
   }
   downloadFile(e2, t2) {
-    return ht.apply(this, [e2, t2]);
+    return ft.apply(this, [e2, t2]);
   }
   uploadFile(e2, t2) {
-    return at.apply(this, [e2, t2]);
+    return lt.apply(this, [e2, t2]);
   }
   getUploadMetadata(e2, t2) {
-    return ct.apply(this, [e2, t2]);
+    return ht.apply(this, [e2, t2]);
   }
   registerExtension(e2) {
-    ft[e2.name] = e2;
+    yt[e2.name] = e2;
   }
   async invokeExtension(e2, t2) {
-    const n2 = ft[e2];
+    const n2 = yt[e2];
     if (!n2)
-      throw new te({ message: `扩展${e2} 必须先注册` });
+      throw new se({ message: `扩展${e2} 必须先注册` });
     return await n2.invoke(t2, this);
   }
   useAdapters(e2) {
-    const { adapter: t2, runtime: n2 } = Ae(e2) || {};
-    t2 && (Ce.adapter = t2), n2 && (Ce.runtime = n2);
+    const { adapter: t2, runtime: n2 } = Te(e2) || {};
+    t2 && (xe.adapter = t2), n2 && (xe.runtime = n2);
   }
 }
-var mt = new gt();
-function yt(e2, t2, n2) {
+var wt = new _t();
+function vt(e2, t2, n2) {
   void 0 === n2 && (n2 = {});
   var s2 = /\?/.test(t2), r2 = "";
   for (var i2 in n2)
     "" === r2 ? !s2 && (t2 += "?") : r2 += "&", r2 += i2 + "=" + encodeURIComponent(n2[i2]);
   return /^http(s)?:\/\//.test(t2 += r2) ? t2 : "" + e2 + t2;
 }
-class _t {
+class It {
   post(e2) {
     const { url: t2, data: n2, headers: s2, timeout: r2 } = e2;
     return new Promise((e3, i2) => {
-      ne.request({ url: yt("https:", t2), data: n2, method: "POST", header: s2, timeout: r2, success(t3) {
+      re.request({ url: vt("https:", t2), data: n2, method: "POST", header: s2, timeout: r2, success(t3) {
         e3(t3);
       }, fail(e4) {
         i2(e4);
@@ -9916,7 +10016,7 @@ class _t {
   }
   upload(e2) {
     return new Promise((t2, n2) => {
-      const { url: s2, file: r2, data: i2, headers: o2, fileType: a2 } = e2, c2 = ne.uploadFile({ url: yt("https:", s2), name: "file", formData: Object.assign({}, i2), filePath: r2, fileType: a2, header: o2, success(e3) {
+      const { url: s2, file: r2, data: i2, headers: o2, fileType: a2 } = e2, c2 = re.uploadFile({ url: vt("https:", s2), name: "file", formData: Object.assign({}, i2), filePath: r2, fileType: a2, header: o2, success(e3) {
         const n3 = { statusCode: e3.statusCode, data: e3.data || {} };
         200 === e3.statusCode && i2.success_action_status && (n3.statusCode = parseInt(i2.success_action_status, 10)), t2(n3);
       }, fail(e3) {
@@ -9928,23 +10028,23 @@ class _t {
     });
   }
 }
-const wt = { setItem(e2, t2) {
-  ne.setStorageSync(e2, t2);
-}, getItem: (e2) => ne.getStorageSync(e2), removeItem(e2) {
-  ne.removeStorageSync(e2);
+const St = { setItem(e2, t2) {
+  re.setStorageSync(e2, t2);
+}, getItem: (e2) => re.getStorageSync(e2), removeItem(e2) {
+  re.removeStorageSync(e2);
 }, clear() {
-  ne.clearStorageSync();
+  re.clearStorageSync();
 } };
-var vt = { genAdapter: function() {
-  return { root: {}, reqClass: _t, localStorage: wt, primaryStorage: "local" };
+var bt = { genAdapter: function() {
+  return { root: {}, reqClass: It, localStorage: St, primaryStorage: "local" };
 }, isMatch: function() {
   return true;
 }, runtime: "uni_app" };
-mt.useAdapters(vt);
-const It = mt, St = It.init;
-It.init = function(e2) {
+wt.useAdapters(bt);
+const kt = wt, At = kt.init;
+kt.init = function(e2) {
   e2.env = e2.spaceId;
-  const t2 = St.call(this, e2);
+  const t2 = At.call(this, e2);
   t2.config.provider = "tencent", t2.config.spaceId = e2.spaceId;
   const n2 = t2.auth;
   return t2.auth = function(e3) {
@@ -9953,7 +10053,7 @@ It.init = function(e2) {
       var n3;
       t3[e4] = (n3 = t3[e4], function(e5) {
         e5 = e5 || {};
-        const { success: t4, fail: s2, complete: r2 } = ee(e5);
+        const { success: t4, fail: s2, complete: r2 } = ne(e5);
         if (!(t4 || s2 || r2))
           return n3.call(this, e5);
         n3.call(this, e5).then((e6) => {
@@ -9965,12 +10065,12 @@ It.init = function(e2) {
     }), t3;
   }, t2.customAuth = t2.auth, t2;
 };
-var bt = It;
-async function kt(e2, t2) {
+var Ct = kt;
+async function Pt(e2, t2) {
   const n2 = `http://${e2}:${t2}/system/ping`;
   try {
     const e3 = await (s2 = { url: n2, timeout: 500 }, new Promise((e4, t3) => {
-      ne.request({ ...s2, success(t4) {
+      re.request({ ...s2, success(t4) {
         e4(t4);
       }, fail(e5) {
         t3(e5);
@@ -9982,37 +10082,37 @@ async function kt(e2, t2) {
   }
   var s2;
 }
-async function At(e2, t2) {
+async function Tt(e2, t2) {
   let n2;
   for (let s2 = 0; s2 < e2.length; s2++) {
     const r2 = e2[s2];
-    if (await kt(r2, t2)) {
+    if (await Pt(r2, t2)) {
       n2 = r2;
       break;
     }
   }
   return { address: n2, port: t2 };
 }
-const Ct = { "serverless.file.resource.generateProximalSign": "storage/generate-proximal-sign", "serverless.file.resource.report": "storage/report", "serverless.file.resource.delete": "storage/delete", "serverless.file.resource.getTempFileURL": "storage/get-temp-file-url" };
-var Pt = class {
+const xt = { "serverless.file.resource.generateProximalSign": "storage/generate-proximal-sign", "serverless.file.resource.report": "storage/report", "serverless.file.resource.delete": "storage/delete", "serverless.file.resource.getTempFileURL": "storage/get-temp-file-url" };
+var Ot = class {
   constructor(e2) {
     if (["spaceId", "clientSecret"].forEach((t2) => {
       if (!Object.prototype.hasOwnProperty.call(e2, t2))
         throw new Error(`${t2} required`);
     }), !e2.endpoint)
       throw new Error("集群空间未配置ApiEndpoint，配置后需要重新关联服务空间后生效");
-    this.config = Object.assign({}, e2), this.config.provider = "dcloud", this.config.requestUrl = this.config.endpoint + "/client", this.config.envType = this.config.envType || "public", this.adapter = ne;
+    this.config = Object.assign({}, e2), this.config.provider = "dcloud", this.config.requestUrl = this.config.endpoint + "/client", this.config.envType = this.config.envType || "public", this.adapter = re;
   }
   async request(e2, t2 = true) {
     const n2 = t2;
-    return e2 = n2 ? await this.setupLocalRequest(e2) : this.setupRequest(e2), Promise.resolve().then(() => n2 ? this.requestLocal(e2) : de.wrappedRequest(e2, this.adapter.request));
+    return e2 = n2 ? await this.setupLocalRequest(e2) : this.setupRequest(e2), Promise.resolve().then(() => n2 ? this.requestLocal(e2) : fe.wrappedRequest(e2, this.adapter.request));
   }
   requestLocal(e2) {
     return new Promise((t2, n2) => {
       this.adapter.request(Object.assign(e2, { complete(e3) {
         if (e3 || (e3 = {}), !e3.statusCode || e3.statusCode >= 400) {
           const t3 = e3.data && e3.data.code || "SYS_ERR", s2 = e3.data && e3.data.message || "request:fail";
-          return n2(new te({ code: t3, message: s2 }));
+          return n2(new se({ code: t3, message: s2 }));
         }
         t2({ success: true, result: e3.data });
       } }));
@@ -10020,15 +10120,15 @@ var Pt = class {
   }
   setupRequest(e2) {
     const t2 = Object.assign({}, e2, { spaceId: this.config.spaceId, timestamp: Date.now() }), n2 = { "Content-Type": "application/json" };
-    n2["x-serverless-sign"] = de.sign(t2, this.config.clientSecret);
-    const s2 = he();
+    n2["x-serverless-sign"] = fe.sign(t2, this.config.clientSecret);
+    const s2 = pe();
     n2["x-client-info"] = encodeURIComponent(JSON.stringify(s2));
-    const { token: r2 } = re();
+    const { token: r2 } = oe();
     return n2["x-client-token"] = r2, { url: this.config.requestUrl, method: "POST", data: t2, dataType: "json", header: JSON.parse(JSON.stringify(n2)) };
   }
   async setupLocalRequest(e2) {
-    const t2 = he(), { token: n2 } = re(), s2 = Object.assign({}, e2, { spaceId: this.config.spaceId, timestamp: Date.now(), clientInfo: t2, token: n2 }), { address: r2, servePort: i2 } = this.__dev__ && this.__dev__.debugInfo || {}, { address: o2 } = await At(r2, i2);
-    return { url: `http://${o2}:${i2}/${Ct[e2.method]}`, method: "POST", data: s2, dataType: "json", header: JSON.parse(JSON.stringify({ "Content-Type": "application/json" })) };
+    const t2 = pe(), { token: n2 } = oe(), s2 = Object.assign({}, e2, { spaceId: this.config.spaceId, timestamp: Date.now(), clientInfo: t2, token: n2 }), { address: r2, servePort: i2 } = this.__dev__ && this.__dev__.debugInfo || {}, { address: o2 } = await Tt(r2, i2);
+    return { url: `http://${o2}:${i2}/${xt[e2.method]}`, method: "POST", data: s2, dataType: "json", header: JSON.parse(JSON.stringify({ "Content-Type": "application/json" })) };
   }
   callFunction(e2) {
     const t2 = { method: "serverless.function.runtime.invoke", params: JSON.stringify({ functionTarget: e2.name, functionArgs: e2.data || {} }) };
@@ -10044,22 +10144,22 @@ var Pt = class {
   }
   uploadFile({ filePath: e2, cloudPath: t2, fileType: n2 = "image", onUploadProgress: s2 }) {
     if (!t2)
-      throw new te({ code: "CLOUDPATH_REQUIRED", message: "cloudPath不可为空" });
+      throw new se({ code: "CLOUDPATH_REQUIRED", message: "cloudPath不可为空" });
     let r2;
     return this.getUploadFileOptions({ cloudPath: t2 }).then((t3) => {
       const { url: i2, formData: o2, name: a2 } = t3.result;
       return r2 = t3.result.fileUrl, new Promise((t4, r3) => {
         const c2 = this.adapter.uploadFile({ url: i2, formData: o2, name: a2, filePath: e2, fileType: n2, success(e3) {
-          e3 && e3.statusCode < 400 ? t4(e3) : r3(new te({ code: "UPLOAD_FAILED", message: "文件上传失败" }));
+          e3 && e3.statusCode < 400 ? t4(e3) : r3(new se({ code: "UPLOAD_FAILED", message: "文件上传失败" }));
         }, fail(e3) {
-          r3(new te({ code: e3.code || "UPLOAD_FAILED", message: e3.message || e3.errMsg || "文件上传失败" }));
+          r3(new se({ code: e3.code || "UPLOAD_FAILED", message: e3.message || e3.errMsg || "文件上传失败" }));
         } });
         "function" == typeof s2 && c2 && "function" == typeof c2.onProgressUpdate && c2.onProgressUpdate((e3) => {
           s2({ loaded: e3.totalBytesSent, total: e3.totalBytesExpectedToSend });
         });
       });
     }).then(() => this.reportUploadFile({ cloudPath: t2 })).then((t3) => new Promise((n3, s3) => {
-      t3.success ? n3({ success: true, filePath: e2, fileID: r2 }) : s3(new te({ code: "UPLOAD_FAILED", message: "文件上传失败" }));
+      t3.success ? n3({ success: true, filePath: e2, fileID: r2 }) : s3(new se({ code: "UPLOAD_FAILED", message: "文件上传失败" }));
     }));
   }
   deleteFile({ fileList: e2 }) {
@@ -10067,22 +10167,22 @@ var Pt = class {
     return this.request(t2).then((e3) => {
       if (e3.success)
         return e3.result;
-      throw new te({ code: "DELETE_FILE_FAILED", message: "删除文件失败" });
+      throw new se({ code: "DELETE_FILE_FAILED", message: "删除文件失败" });
     });
   }
   getTempFileURL({ fileList: e2, maxAge: t2 } = {}) {
     if (!Array.isArray(e2) || 0 === e2.length)
-      throw new te({ code: "INVALID_PARAM", message: "fileList的元素必须是非空的字符串" });
+      throw new se({ code: "INVALID_PARAM", message: "fileList的元素必须是非空的字符串" });
     const n2 = { method: "serverless.file.resource.getTempFileURL", params: JSON.stringify({ fileList: e2, maxAge: t2 }) };
     return this.request(n2).then((e3) => {
       if (e3.success)
         return { fileList: e3.result.fileList.map((e4) => ({ fileID: e4.fileID, tempFileURL: e4.tempFileURL })) };
-      throw new te({ code: "GET_TEMP_FILE_URL_FAILED", message: "获取临时文件链接失败" });
+      throw new se({ code: "GET_TEMP_FILE_URL_FAILED", message: "获取临时文件链接失败" });
     });
   }
 };
-var Tt = { init(e2) {
-  const t2 = new Pt(e2), n2 = { signInAnonymously: function() {
+var Et = { init(e2) {
+  const t2 = new Ot(e2), n2 = { signInAnonymously: function() {
     return Promise.resolve();
   }, getLoginState: function() {
     return Promise.resolve(false);
@@ -10090,77 +10190,77 @@ var Tt = { init(e2) {
   return t2.auth = function() {
     return n2;
   }, t2.customAuth = t2.auth, t2;
-} }, xt = n(function(e2, t2) {
+} }, Lt = n(function(e2, t2) {
   e2.exports = r.enc.Hex;
 });
-function Ot() {
+function Rt() {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(e2) {
     var t2 = 16 * Math.random() | 0;
     return ("x" === e2 ? t2 : 3 & t2 | 8).toString(16);
   });
 }
-function Et(e2 = "", t2 = {}) {
-  const { data: n2, functionName: s2, method: r2, headers: i2, signHeaderKeys: o2 = [], config: a2 } = t2, c2 = Date.now(), u2 = Ot(), l2 = Object.assign({}, i2, { "x-from-app-id": a2.spaceAppId, "x-from-env-id": a2.spaceId, "x-to-env-id": a2.spaceId, "x-from-instance-id": c2, "x-from-function-name": s2, "x-client-timestamp": c2, "x-alipay-source": "client", "x-request-id": u2, "x-alipay-callid": u2, "x-trace-id": u2 }), h2 = ["x-from-app-id", "x-from-env-id", "x-to-env-id", "x-from-instance-id", "x-from-function-name", "x-client-timestamp"].concat(o2), [d2 = "", p2 = ""] = e2.split("?") || [], f2 = function(e3) {
+function Ut(e2 = "", t2 = {}) {
+  const { data: n2, functionName: s2, method: r2, headers: i2, signHeaderKeys: o2 = [], config: a2 } = t2, c2 = Date.now(), u2 = Rt(), l2 = Object.assign({}, i2, { "x-from-app-id": a2.spaceAppId, "x-from-env-id": a2.spaceId, "x-to-env-id": a2.spaceId, "x-from-instance-id": c2, "x-from-function-name": s2, "x-client-timestamp": c2, "x-alipay-source": "client", "x-request-id": u2, "x-alipay-callid": u2, "x-trace-id": u2 }), h2 = ["x-from-app-id", "x-from-env-id", "x-to-env-id", "x-from-instance-id", "x-from-function-name", "x-client-timestamp"].concat(o2), [d2 = "", p2 = ""] = e2.split("?") || [], f2 = function(e3) {
     const t3 = e3.signedHeaders.join(";"), n3 = e3.signedHeaders.map((t4) => `${t4.toLowerCase()}:${e3.headers[t4]}
-`).join(""), s3 = we(e3.body).toString(xt), r3 = `${e3.method.toUpperCase()}
+`).join(""), s3 = Ie(e3.body).toString(Lt), r3 = `${e3.method.toUpperCase()}
 ${e3.path}
 ${e3.query}
 ${n3}
 ${t3}
 ${s3}
-`, i3 = we(r3).toString(xt), o3 = `HMAC-SHA256
+`, i3 = Ie(r3).toString(Lt), o3 = `HMAC-SHA256
 ${e3.timestamp}
 ${i3}
-`, a3 = ve(o3, e3.secretKey).toString(xt);
+`, a3 = Se(o3, e3.secretKey).toString(Lt);
     return `HMAC-SHA256 Credential=${e3.secretId}, SignedHeaders=${t3}, Signature=${a3}`;
   }({ path: d2, query: p2, method: r2, headers: l2, timestamp: c2, body: JSON.stringify(n2), secretId: a2.accessKey, secretKey: a2.secretKey, signedHeaders: h2.sort() });
   return { url: `${a2.endpoint}${e2}`, headers: Object.assign({}, l2, { Authorization: f2 }) };
 }
-function Lt({ url: e2, data: t2, method: n2 = "POST", headers: s2 = {}, timeout: r2 }) {
+function Nt({ url: e2, data: t2, method: n2 = "POST", headers: s2 = {}, timeout: r2 }) {
   return new Promise((i2, o2) => {
-    ne.request({ url: e2, method: n2, data: "object" == typeof t2 ? JSON.stringify(t2) : t2, header: s2, dataType: "json", timeout: r2, complete: (e3 = {}) => {
+    re.request({ url: e2, method: n2, data: "object" == typeof t2 ? JSON.stringify(t2) : t2, header: s2, dataType: "json", timeout: r2, complete: (e3 = {}) => {
       const t3 = s2["x-trace-id"] || "";
       if (!e3.statusCode || e3.statusCode >= 400) {
         const { message: n3, errMsg: s3, trace_id: r3 } = e3.data || {};
-        return o2(new te({ code: "SYS_ERR", message: n3 || s3 || "request:fail", requestId: r3 || t3 }));
+        return o2(new se({ code: "SYS_ERR", message: n3 || s3 || "request:fail", requestId: r3 || t3 }));
       }
       i2({ status: e3.statusCode, data: e3.data, headers: e3.header, requestId: t3 });
     } });
   });
 }
-function Rt(e2, t2) {
-  const { path: n2, data: s2, method: r2 = "GET" } = e2, { url: i2, headers: o2 } = Et(n2, { functionName: "", data: s2, method: r2, headers: { "x-alipay-cloud-mode": "oss", "x-data-api-type": "oss", "x-expire-timestamp": Date.now() + 6e4 }, signHeaderKeys: ["x-data-api-type", "x-expire-timestamp"], config: t2 });
-  return Lt({ url: i2, data: s2, method: r2, headers: o2 }).then((e3) => {
+function Dt(e2, t2) {
+  const { path: n2, data: s2, method: r2 = "GET" } = e2, { url: i2, headers: o2 } = Ut(n2, { functionName: "", data: s2, method: r2, headers: { "x-alipay-cloud-mode": "oss", "x-data-api-type": "oss", "x-expire-timestamp": Date.now() + 6e4 }, signHeaderKeys: ["x-data-api-type", "x-expire-timestamp"], config: t2 });
+  return Nt({ url: i2, data: s2, method: r2, headers: o2 }).then((e3) => {
     const t3 = e3.data || {};
     if (!t3.success)
-      throw new te({ code: e3.errCode, message: e3.errMsg, requestId: e3.requestId });
+      throw new se({ code: e3.errCode, message: e3.errMsg, requestId: e3.requestId });
     return t3.data || {};
   }).catch((e3) => {
-    throw new te({ code: e3.errCode, message: e3.errMsg, requestId: e3.requestId });
+    throw new se({ code: e3.errCode, message: e3.errMsg, requestId: e3.requestId });
   });
 }
-function Ut(e2 = "") {
+function qt(e2 = "") {
   const t2 = e2.trim().replace(/^cloud:\/\//, ""), n2 = t2.indexOf("/");
   if (n2 <= 0)
-    throw new te({ code: "INVALID_PARAM", message: "fileID不合法" });
+    throw new se({ code: "INVALID_PARAM", message: "fileID不合法" });
   const s2 = t2.substring(0, n2), r2 = t2.substring(n2 + 1);
   return s2 !== this.config.spaceId && console.warn("file ".concat(e2, " does not belong to env ").concat(this.config.spaceId)), r2;
 }
-function Nt(e2 = "") {
+function Mt(e2 = "") {
   return "cloud://".concat(this.config.spaceId, "/").concat(e2.replace(/^\/+/, ""));
 }
-class Dt {
+class Ft {
   constructor(e2) {
     this.config = e2;
   }
   signedURL(e2, t2 = {}) {
-    const n2 = `/ws/function/${e2}`, s2 = this.config.wsEndpoint.replace(/^ws(s)?:\/\//, ""), r2 = Object.assign({}, t2, { accessKeyId: this.config.accessKey, signatureNonce: Ot(), timestamp: "" + Date.now() }), i2 = [n2, ["accessKeyId", "authorization", "signatureNonce", "timestamp"].sort().map(function(e3) {
+    const n2 = `/ws/function/${e2}`, s2 = this.config.wsEndpoint.replace(/^ws(s)?:\/\//, ""), r2 = Object.assign({}, t2, { accessKeyId: this.config.accessKey, signatureNonce: Rt(), timestamp: "" + Date.now() }), i2 = [n2, ["accessKeyId", "authorization", "signatureNonce", "timestamp"].sort().map(function(e3) {
       return r2[e3] ? "".concat(e3, "=").concat(r2[e3]) : null;
-    }).filter(Boolean).join("&"), `host:${s2}`].join("\n"), o2 = ["HMAC-SHA256", we(i2).toString(xt)].join("\n"), a2 = ve(o2, this.config.secretKey).toString(xt), c2 = Object.keys(r2).map((e3) => `${e3}=${encodeURIComponent(r2[e3])}`).join("&");
+    }).filter(Boolean).join("&"), `host:${s2}`].join("\n"), o2 = ["HMAC-SHA256", Ie(i2).toString(Lt)].join("\n"), a2 = Se(o2, this.config.secretKey).toString(Lt), c2 = Object.keys(r2).map((e3) => `${e3}=${encodeURIComponent(r2[e3])}`).join("&");
     return `${this.config.wsEndpoint}${n2}?${c2}&signature=${a2}`;
   }
 }
-var Mt = class {
+var Kt = class {
   constructor(e2) {
     if (["spaceId", "spaceAppId", "accessKey", "secretKey"].forEach((t2) => {
       if (!Object.prototype.hasOwnProperty.call(e2, t2))
@@ -10172,33 +10272,33 @@ var Mt = class {
         throw new Error("endpoint must start with https://");
       e2.endpoint = e2.endpoint.replace(/\/$/, "");
     }
-    this.config = Object.assign({}, e2, { endpoint: e2.endpoint || `https://${e2.spaceId}.api-hz.cloudbasefunction.cn`, wsEndpoint: e2.wsEndpoint || `wss://${e2.spaceId}.api-hz.cloudbasefunction.cn` }), this._websocket = new Dt(this.config);
+    this.config = Object.assign({}, e2, { endpoint: e2.endpoint || `https://${e2.spaceId}.api-hz.cloudbasefunction.cn`, wsEndpoint: e2.wsEndpoint || `wss://${e2.spaceId}.api-hz.cloudbasefunction.cn` }), this._websocket = new Ft(this.config);
   }
   callFunction(e2) {
     return function(e3, t2) {
       const { name: n2, data: s2, async: r2 = false, timeout: i2 } = e3, o2 = "POST", a2 = { "x-to-function-name": n2 };
       r2 && (a2["x-function-invoke-type"] = "async");
-      const { url: c2, headers: u2 } = Et("/functions/invokeFunction", { functionName: n2, data: s2, method: o2, headers: a2, signHeaderKeys: ["x-to-function-name"], config: t2 });
-      return Lt({ url: c2, data: s2, method: o2, headers: u2, timeout: i2 }).then((e4) => {
+      const { url: c2, headers: u2 } = Ut("/functions/invokeFunction", { functionName: n2, data: s2, method: o2, headers: a2, signHeaderKeys: ["x-to-function-name"], config: t2 });
+      return Nt({ url: c2, data: s2, method: o2, headers: u2, timeout: i2 }).then((e4) => {
         let t3 = 0;
         if (r2) {
           const n3 = e4.data || {};
           t3 = "200" === n3.errCode ? 0 : n3.errCode, e4.data = n3.data || {}, e4.errMsg = n3.errMsg;
         }
         if (0 !== t3)
-          throw new te({ code: t3, message: e4.errMsg, requestId: e4.requestId });
+          throw new se({ code: t3, message: e4.errMsg, requestId: e4.requestId });
         return { errCode: t3, success: 0 === t3, requestId: e4.requestId, result: e4.data };
       }).catch((e4) => {
-        throw new te({ code: e4.errCode, message: e4.errMsg, requestId: e4.requestId });
+        throw new se({ code: e4.errCode, message: e4.errMsg, requestId: e4.requestId });
       });
     }(e2, this.config);
   }
   uploadFileToOSS({ url: e2, filePath: t2, fileType: n2, formData: s2, onUploadProgress: r2 }) {
     return new Promise((i2, o2) => {
-      const a2 = ne.uploadFile({ url: e2, filePath: t2, fileType: n2, formData: s2, name: "file", success(e3) {
-        e3 && e3.statusCode < 400 ? i2(e3) : o2(new te({ code: "UPLOAD_FAILED", message: "文件上传失败" }));
+      const a2 = re.uploadFile({ url: e2, filePath: t2, fileType: n2, formData: s2, name: "file", success(e3) {
+        e3 && e3.statusCode < 400 ? i2(e3) : o2(new se({ code: "UPLOAD_FAILED", message: "文件上传失败" }));
       }, fail(e3) {
-        o2(new te({ code: e3.code || "UPLOAD_FAILED", message: e3.message || e3.errMsg || "文件上传失败" }));
+        o2(new se({ code: e3.code || "UPLOAD_FAILED", message: e3.message || e3.errMsg || "文件上传失败" }));
       } });
       "function" == typeof r2 && a2 && "function" == typeof a2.onProgressUpdate && a2.onProgressUpdate((e3) => {
         r2({ loaded: e3.totalBytesSent, total: e3.totalBytesExpectedToSend });
@@ -10207,38 +10307,43 @@ var Mt = class {
   }
   async uploadFile({ filePath: e2, cloudPath: t2 = "", fileType: n2 = "image", onUploadProgress: s2 }) {
     if ("string" !== f(t2))
-      throw new te({ code: "INVALID_PARAM", message: "cloudPath必须为字符串类型" });
+      throw new se({ code: "INVALID_PARAM", message: "cloudPath必须为字符串类型" });
     if (!(t2 = t2.trim()))
-      throw new te({ code: "INVALID_PARAM", message: "cloudPath不可为空" });
+      throw new se({ code: "INVALID_PARAM", message: "cloudPath不可为空" });
     if (/:\/\//.test(t2))
-      throw new te({ code: "INVALID_PARAM", message: "cloudPath不合法" });
-    const r2 = await Rt({ path: "/".concat(t2.replace(/^\//, ""), "?post_url") }, this.config), { file_id: i2, upload_url: o2, form_data: a2 } = r2, c2 = a2 && a2.reduce((e3, t3) => (e3[t3.key] = t3.value, e3), {});
+      throw new se({ code: "INVALID_PARAM", message: "cloudPath不合法" });
+    const r2 = await Dt({ path: "/".concat(t2.replace(/^\//, ""), "?post_url") }, this.config), { file_id: i2, upload_url: o2, form_data: a2 } = r2, c2 = a2 && a2.reduce((e3, t3) => (e3[t3.key] = t3.value, e3), {});
     return this.uploadFileToOSS({ url: o2, filePath: e2, fileType: n2, formData: c2, onUploadProgress: s2 }).then(() => ({ fileID: i2 }));
   }
   async getTempFileURL({ fileList: e2 }) {
     return new Promise((t2, n2) => {
-      (!e2 || e2.length < 0) && n2(new te({ errCode: "INVALID_PARAM", errMsg: "fileList不能为空数组" })), e2.length > 50 && n2(new te({ errCode: "INVALID_PARAM", errMsg: "fileList数组长度不能超过50" }));
+      (!e2 || e2.length < 0) && t2({ code: "INVALID_PARAM", message: "fileList不能为空数组" }), e2.length > 50 && t2({ code: "INVALID_PARAM", message: "fileList数组长度不能超过50" });
       const s2 = [];
-      for (const t3 of e2) {
-        "string" !== f(t3) && n2(new te({ errCode: "INVALID_PARAM", errMsg: "fileList的元素必须是非空的字符串" }));
-        const e3 = Ut.call(this, t3);
+      for (const n3 of e2) {
+        let e3;
+        "string" !== f(n3) && t2({ code: "INVALID_PARAM", message: "fileList的元素必须是非空的字符串" });
+        try {
+          e3 = qt.call(this, n3);
+        } catch (t3) {
+          console.warn(t3.errCode, t3.errMsg), e3 = n3;
+        }
         s2.push({ file_id: e3, expire: 600 });
       }
-      Rt({ path: "/?download_url", data: { file_list: s2 }, method: "POST" }, this.config).then((e3) => {
+      Dt({ path: "/?download_url", data: { file_list: s2 }, method: "POST" }, this.config).then((e3) => {
         const { file_list: n3 = [] } = e3;
-        t2({ fileList: n3.map((e4) => ({ fileID: Nt.call(this, e4.file_id), tempFileURL: e4.download_url })) });
+        t2({ fileList: n3.map((e4) => ({ fileID: Mt.call(this, e4.file_id), tempFileURL: e4.download_url })) });
       }).catch((e3) => n2(e3));
     });
   }
   async connectWebSocket(e2) {
     const { name: t2, query: n2 } = e2;
-    return ne.connectSocket({ url: this._websocket.signedURL(t2, n2), complete: () => {
+    return re.connectSocket({ url: this._websocket.signedURL(t2, n2), complete: () => {
     } });
   }
 };
-var qt = { init: (e2) => {
+var jt = { init: (e2) => {
   e2.provider = "alipay";
-  const t2 = new Mt(e2);
+  const t2 = new Kt(e2);
   return t2.auth = function() {
     return { signInAnonymously: function() {
       return Promise.resolve();
@@ -10247,21 +10352,21 @@ var qt = { init: (e2) => {
     } };
   }, t2;
 } };
-function Ft({ data: e2 }) {
+function $t({ data: e2 }) {
   let t2;
-  t2 = he();
+  t2 = pe();
   const n2 = JSON.parse(JSON.stringify(e2 || {}));
   if (Object.assign(n2, { clientInfo: t2 }), !n2.uniIdToken) {
-    const { token: e3 } = re();
+    const { token: e3 } = oe();
     e3 && (n2.uniIdToken = e3);
   }
   return n2;
 }
-async function Kt(e2 = {}) {
+async function Bt(e2 = {}) {
   await this.__dev__.initLocalNetwork();
   const { localAddress: t2, localPort: n2 } = this.__dev__, s2 = { aliyun: "aliyun", tencent: "tcb", alipay: "alipay", dcloud: "dcloud" }[this.config.provider], r2 = this.config.spaceId, i2 = `http://${t2}:${n2}/system/check-function`, o2 = `http://${t2}:${n2}/cloudfunctions/${e2.name}`;
   return new Promise((t3, n3) => {
-    ne.request({ method: "POST", url: i2, data: { name: e2.name, platform: C, provider: s2, spaceId: r2 }, timeout: 3e3, success(e3) {
+    re.request({ method: "POST", url: i2, data: { name: e2.name, platform: C, provider: s2, spaceId: r2 }, timeout: 3e3, success(e3) {
       t3(e3);
     }, fail() {
       t3({ data: { code: "NETWORK_ERROR", message: "连接本地调试服务失败，请检查客户端是否和主机在同一局域网下，自动切换为已部署的云函数。" } });
@@ -10294,34 +10399,34 @@ async function Kt(e2 = {}) {
       return this._callCloudFunction(e2);
     }
     return new Promise((t4, n4) => {
-      const r3 = Ft.call(this, { data: e2.data });
-      ne.request({ method: "POST", url: o2, data: { provider: s2, platform: C, param: r3 }, timeout: e2.timeout, success: ({ statusCode: e3, data: s3 } = {}) => !e3 || e3 >= 400 ? n4(new te({ code: s3.code || "SYS_ERR", message: s3.message || "request:fail" })) : t4({ result: s3 }), fail(e3) {
-        n4(new te({ code: e3.code || e3.errCode || "SYS_ERR", message: e3.message || e3.errMsg || "request:fail" }));
+      const r3 = $t.call(this, { data: e2.data });
+      re.request({ method: "POST", url: o2, data: { provider: s2, platform: C, param: r3 }, timeout: e2.timeout, success: ({ statusCode: e3, data: s3 } = {}) => !e3 || e3 >= 400 ? n4(new se({ code: s3.code || "SYS_ERR", message: s3.message || "request:fail" })) : t4({ result: s3 }), fail(e3) {
+        n4(new se({ code: e3.code || e3.errCode || "SYS_ERR", message: e3.message || e3.errMsg || "request:fail" }));
       } });
     });
   });
 }
-const jt = [{ rule: /fc_function_not_found|FUNCTION_NOT_FOUND/, content: "，云函数[{functionName}]在云端不存在，请检查此云函数名称是否正确以及该云函数是否已上传到服务空间", mode: "append" }];
-var $t = /[\\^$.*+?()[\]{}|]/g, Bt = RegExp($t.source);
-function Wt(e2, t2, n2) {
-  return e2.replace(new RegExp((s2 = t2) && Bt.test(s2) ? s2.replace($t, "\\$&") : s2, "g"), n2);
+const Wt = [{ rule: /fc_function_not_found|FUNCTION_NOT_FOUND/, content: "，云函数[{functionName}]在云端不存在，请检查此云函数名称是否正确以及该云函数是否已上传到服务空间", mode: "append" }];
+var Ht = /[\\^$.*+?()[\]{}|]/g, Jt = RegExp(Ht.source);
+function zt(e2, t2, n2) {
+  return e2.replace(new RegExp((s2 = t2) && Jt.test(s2) ? s2.replace(Ht, "\\$&") : s2, "g"), n2);
   var s2;
 }
-const Jt = "request", zt = "response", Vt = "both";
-const En = { code: 2e4, message: "System error" }, Ln = { code: 20101, message: "Invalid client" };
-function Nn(e2) {
+const Gt = "request", Yt = "response", Qt = "both";
+const Un = { code: 2e4, message: "System error" }, Nn = { code: 20101, message: "Invalid client" };
+function Mn(e2) {
   const { errSubject: t2, subject: n2, errCode: s2, errMsg: r2, code: i2, message: o2, cause: a2 } = e2 || {};
-  return new te({ subject: t2 || n2 || "uni-secure-network", code: s2 || i2 || En.code, message: r2 || o2, cause: a2 });
+  return new se({ subject: t2 || n2 || "uni-secure-network", code: s2 || i2 || Un.code, message: r2 || o2, cause: a2 });
 }
-let Mn;
-function $n({ secretType: e2 } = {}) {
-  return e2 === Jt || e2 === zt || e2 === Vt;
+let Kn;
+function Hn({ secretType: e2 } = {}) {
+  return e2 === Gt || e2 === Yt || e2 === Qt;
 }
-function Bn({ name: e2, data: t2 = {} } = {}) {
+function Jn({ name: e2, data: t2 = {} } = {}) {
   return "app" === C;
 }
-function Wn({ provider: e2, spaceId: t2, functionName: n2 } = {}) {
-  const { appId: s2, uniPlatform: r2, osName: i2 } = ce();
+function zn({ provider: e2, spaceId: t2, functionName: n2 } = {}) {
+  const { appId: s2, uniPlatform: r2, osName: i2 } = le();
   let o2 = r2;
   "app" === r2 && (o2 = i2);
   const a2 = function({ provider: e3, spaceId: t3 } = {}) {
@@ -10351,60 +10456,60 @@ function Wn({ provider: e2, spaceId: t2, functionName: n2 } = {}) {
     return false;
   if ((c2[l2] || []).find((e3 = {}) => e3.appId === s2 && (e3.platform || "").toLowerCase() === o2.toLowerCase()))
     return true;
-  throw console.error(`此应用[appId: ${s2}, platform: ${o2}]不在云端配置的允许访问的应用列表内，参考：https://uniapp.dcloud.net.cn/uniCloud/secure-network.html#verify-client`), Nn(Ln);
+  throw console.error(`此应用[appId: ${s2}, platform: ${o2}]不在云端配置的允许访问的应用列表内，参考：https://uniapp.dcloud.net.cn/uniCloud/secure-network.html#verify-client`), Mn(Nn);
 }
-function Hn({ functionName: e2, result: t2, logPvd: n2 }) {
+function Vn({ functionName: e2, result: t2, logPvd: n2 }) {
   if (this.__dev__.debugLog && t2 && t2.requestId) {
     const s2 = JSON.stringify({ spaceId: this.config.spaceId, functionName: e2, requestId: t2.requestId });
     console.log(`[${n2}-request]${s2}[/${n2}-request]`);
   }
 }
-function Jn(e2) {
+function Gn(e2) {
   const t2 = e2.callFunction, n2 = function(n3) {
     const s2 = n3.name;
-    n3.data = Ft.call(e2, { data: n3.data });
-    const r2 = { aliyun: "aliyun", tencent: "tcb", tcb: "tcb", alipay: "alipay", dcloud: "dcloud" }[this.config.provider], i2 = $n(n3), o2 = Bn(n3), a2 = i2 || o2;
-    return t2.call(this, n3).then((e3) => (e3.errCode = 0, !a2 && Hn.call(this, { functionName: s2, result: e3, logPvd: r2 }), Promise.resolve(e3)), (e3) => (!a2 && Hn.call(this, { functionName: s2, result: e3, logPvd: r2 }), e3 && e3.message && (e3.message = function({ message: e4 = "", extraInfo: t3 = {}, formatter: n4 = [] } = {}) {
+    n3.data = $t.call(e2, { data: n3.data });
+    const r2 = { aliyun: "aliyun", tencent: "tcb", tcb: "tcb", alipay: "alipay", dcloud: "dcloud" }[this.config.provider], i2 = Hn(n3), o2 = Jn(n3), a2 = i2 || o2;
+    return t2.call(this, n3).then((e3) => (e3.errCode = 0, !a2 && Vn.call(this, { functionName: s2, result: e3, logPvd: r2 }), Promise.resolve(e3)), (e3) => (!a2 && Vn.call(this, { functionName: s2, result: e3, logPvd: r2 }), e3 && e3.message && (e3.message = function({ message: e4 = "", extraInfo: t3 = {}, formatter: n4 = [] } = {}) {
       for (let s3 = 0; s3 < n4.length; s3++) {
         const { rule: r3, content: i3, mode: o3 } = n4[s3], a3 = e4.match(r3);
         if (!a3)
           continue;
         let c2 = i3;
         for (let e5 = 1; e5 < a3.length; e5++)
-          c2 = Wt(c2, `{$${e5}}`, a3[e5]);
+          c2 = zt(c2, `{$${e5}}`, a3[e5]);
         for (const e5 in t3)
-          c2 = Wt(c2, `{${e5}}`, t3[e5]);
+          c2 = zt(c2, `{${e5}}`, t3[e5]);
         return "replace" === o3 ? c2 : e4 + c2;
       }
       return e4;
-    }({ message: `[${n3.name}]: ${e3.message}`, formatter: jt, extraInfo: { functionName: s2 } })), Promise.reject(e3)));
+    }({ message: `[${n3.name}]: ${e3.message}`, formatter: Wt, extraInfo: { functionName: s2 } })), Promise.reject(e3)));
   };
   e2.callFunction = function(t3) {
     const { provider: s2, spaceId: r2 } = e2.config, i2 = t3.name;
     let o2, a2;
-    if (t3.data = t3.data || {}, e2.__dev__.debugInfo && !e2.__dev__.debugInfo.forceRemote && T ? (e2._callCloudFunction || (e2._callCloudFunction = n2, e2._callLocalFunction = Kt), o2 = Kt) : o2 = n2, o2 = o2.bind(e2), Bn(t3))
+    if (t3.data = t3.data || {}, e2.__dev__.debugInfo && !e2.__dev__.debugInfo.forceRemote && T ? (e2._callCloudFunction || (e2._callCloudFunction = n2, e2._callLocalFunction = Bt), o2 = Bt) : o2 = n2, o2 = o2.bind(e2), Jn(t3))
       ;
     else if (function({ name: e3, data: t4 = {} }) {
       return "uni-id-co" === e3 && "secureNetworkHandshakeByWeixin" === t4.method;
     }(t3))
       a2 = o2.call(e2, t3);
-    else if ($n(t3)) {
-      a2 = new Mn({ secretType: t3.secretType, uniCloudIns: e2 }).wrapEncryptDataCallFunction(n2.bind(e2))(t3);
-    } else if (Wn({ provider: s2, spaceId: r2, functionName: i2 })) {
-      a2 = new Mn({ secretType: t3.secretType, uniCloudIns: e2 }).wrapVerifyClientCallFunction(n2.bind(e2))(t3);
+    else if (Hn(t3)) {
+      a2 = new Kn({ secretType: t3.secretType, uniCloudIns: e2 }).wrapEncryptDataCallFunction(n2.bind(e2))(t3);
+    } else if (zn({ provider: s2, spaceId: r2, functionName: i2 })) {
+      a2 = new Kn({ secretType: t3.secretType, uniCloudIns: e2 }).wrapVerifyClientCallFunction(n2.bind(e2))(t3);
     } else
       a2 = o2(t3);
     return Object.defineProperty(a2, "result", { get: () => (console.warn("当前返回结果为Promise类型，不可直接访问其result属性，详情请参考：https://uniapp.dcloud.net.cn/uniCloud/faq?id=promise"), {}) }), a2.then((e3) => ("undefined" != typeof UTSJSONObject && (e3.result = new UTSJSONObject(e3.result)), e3));
   };
 }
-Mn = class {
+Kn = class {
   constructor() {
-    throw Nn({ message: `Platform ${C} is not enabled, please check whether secure network module is enabled in your manifest.json` });
+    throw Mn({ message: `Platform ${C} is not enabled, please check whether secure network module is enabled in your manifest.json` });
   }
 };
-const zn = Symbol("CLIENT_DB_INTERNAL");
-function Vn(e2, t2) {
-  return e2.then = "DoNotReturnProxyWithAFunctionNamedThen", e2._internalType = zn, e2.inspect = null, e2.__v_raw = void 0, new Proxy(e2, { get(e3, n2, s2) {
+const Yn = Symbol("CLIENT_DB_INTERNAL");
+function Qn(e2, t2) {
+  return e2.then = "DoNotReturnProxyWithAFunctionNamedThen", e2._internalType = Yn, e2.inspect = null, e2.__v_raw = void 0, new Proxy(e2, { get(e3, n2, s2) {
     if ("_uniClient" === n2)
       return null;
     if ("symbol" == typeof n2)
@@ -10416,7 +10521,7 @@ function Vn(e2, t2) {
     return t2.get(e3, n2, s2);
   } });
 }
-function Gn(e2) {
+function Xn(e2) {
   return { on: (t2, n2) => {
     e2[t2] = e2[t2] || [], e2[t2].indexOf(n2) > -1 || e2[t2].push(n2);
   }, off: (t2, n2) => {
@@ -10425,17 +10530,17 @@ function Gn(e2) {
     -1 !== s2 && e2[t2].splice(s2, 1);
   } };
 }
-const Yn = ["db.Geo", "db.command", "command.aggregate"];
-function Qn(e2, t2) {
-  return Yn.indexOf(`${e2}.${t2}`) > -1;
+const Zn = ["db.Geo", "db.command", "command.aggregate"];
+function es(e2, t2) {
+  return Zn.indexOf(`${e2}.${t2}`) > -1;
 }
-function Xn(e2) {
-  switch (f(e2 = se(e2))) {
+function ts(e2) {
+  switch (f(e2 = ie(e2))) {
     case "array":
-      return e2.map((e3) => Xn(e3));
+      return e2.map((e3) => ts(e3));
     case "object":
-      return e2._internalType === zn || Object.keys(e2).forEach((t2) => {
-        e2[t2] = Xn(e2[t2]);
+      return e2._internalType === Yn || Object.keys(e2).forEach((t2) => {
+        e2[t2] = ts(e2[t2]);
       }), e2;
     case "regexp":
       return { $regexp: { source: e2.source, flags: e2.flags } };
@@ -10445,10 +10550,10 @@ function Xn(e2) {
       return e2;
   }
 }
-function Zn(e2) {
+function ns(e2) {
   return e2 && e2.content && e2.content.$method;
 }
-class es {
+class ss {
   constructor(e2, t2, n2) {
     this.content = e2, this.prevStage = t2 || null, this.udb = null, this._database = n2;
   }
@@ -10457,7 +10562,7 @@ class es {
     const t2 = [e2.content];
     for (; e2.prevStage; )
       e2 = e2.prevStage, t2.push(e2.content);
-    return { $db: t2.reverse().map((e3) => ({ $method: e3.$method, $param: Xn(e3.$param) })) };
+    return { $db: t2.reverse().map((e3) => ({ $method: e3.$method, $param: ts(e3.$param) })) };
   }
   toString() {
     return JSON.stringify(this.toJSON());
@@ -10472,7 +10577,7 @@ class es {
   get isAggregate() {
     let e2 = this;
     for (; e2; ) {
-      const t2 = Zn(e2), n2 = Zn(e2.prevStage);
+      const t2 = ns(e2), n2 = ns(e2.prevStage);
       if ("aggregate" === t2 && "collection" === n2 || "pipeline" === t2)
         return true;
       e2 = e2.prevStage;
@@ -10482,7 +10587,7 @@ class es {
   get isCommand() {
     let e2 = this;
     for (; e2; ) {
-      if ("command" === Zn(e2))
+      if ("command" === ns(e2))
         return true;
       e2 = e2.prevStage;
     }
@@ -10491,7 +10596,7 @@ class es {
   get isAggregateCommand() {
     let e2 = this;
     for (; e2; ) {
-      const t2 = Zn(e2), n2 = Zn(e2.prevStage);
+      const t2 = ns(e2), n2 = ns(e2.prevStage);
       if ("aggregate" === t2 && "command" === n2)
         return true;
       e2 = e2.prevStage;
@@ -10501,7 +10606,7 @@ class es {
   getNextStageFn(e2) {
     const t2 = this;
     return function() {
-      return ts({ $method: e2, $param: Xn(Array.from(arguments)) }, t2, t2._database);
+      return rs({ $method: e2, $param: ts(Array.from(arguments)) }, t2, t2._database);
     };
   }
   get count() {
@@ -10535,22 +10640,22 @@ class es {
   }
   _send(e2, t2) {
     const n2 = this.getAction(), s2 = this.getCommand();
-    if (s2.$db.push({ $method: e2, $param: Xn(t2) }), S) {
+    if (s2.$db.push({ $method: e2, $param: ts(t2) }), S) {
       const e3 = s2.$db.find((e4) => "collection" === e4.$method), t3 = e3 && e3.$param;
       t3 && 1 === t3.length && "string" == typeof e3.$param[0] && e3.$param[0].indexOf(",") > -1 && console.warn("检测到使用JQL语法联表查询时，未使用getTemp先过滤主表数据，在主表数据量大的情况下可能会查询缓慢。\n- 如何优化请参考此文档：https://uniapp.dcloud.net.cn/uniCloud/jql?id=lookup-with-temp \n- 如果主表数据量很小请忽略此信息，项目发行时不会出现此提示。");
     }
     return this._database._callCloudFunction({ action: n2, command: s2 });
   }
 }
-function ts(e2, t2, n2) {
-  return Vn(new es(e2, t2, n2), { get(e3, t3) {
+function rs(e2, t2, n2) {
+  return Qn(new ss(e2, t2, n2), { get(e3, t3) {
     let s2 = "db";
-    return e3 && e3.content && (s2 = e3.content.$method), Qn(s2, t3) ? ts({ $method: t3 }, e3, n2) : function() {
-      return ts({ $method: t3, $param: Xn(Array.from(arguments)) }, e3, n2);
+    return e3 && e3.content && (s2 = e3.content.$method), es(s2, t3) ? rs({ $method: t3 }, e3, n2) : function() {
+      return rs({ $method: t3, $param: ts(Array.from(arguments)) }, e3, n2);
     };
   } });
 }
-function ns({ path: e2, method: t2 }) {
+function is({ path: e2, method: t2 }) {
   return class {
     constructor() {
       this.param = Array.from(arguments);
@@ -10563,14 +10668,14 @@ function ns({ path: e2, method: t2 }) {
     }
   };
 }
-function ss(e2, t2 = {}) {
-  return Vn(new e2(t2), { get: (e3, t3) => Qn("db", t3) ? ts({ $method: t3 }, null, e3) : function() {
-    return ts({ $method: t3, $param: Xn(Array.from(arguments)) }, null, e3);
+function os(e2, t2 = {}) {
+  return Qn(new e2(t2), { get: (e3, t3) => es("db", t3) ? rs({ $method: t3 }, null, e3) : function() {
+    return rs({ $method: t3, $param: ts(Array.from(arguments)) }, null, e3);
   } });
 }
-class rs extends class {
+class as extends class {
   constructor({ uniClient: e2 = {}, isJQL: t2 = false } = {}) {
-    this._uniClient = e2, this._authCallBacks = {}, this._dbCallBacks = {}, e2._isDefault && (this._dbCallBacks = L("_globalUniCloudDatabaseCallback")), t2 || (this.auth = Gn(this._authCallBacks)), this._isJQL = t2, Object.assign(this, Gn(this._dbCallBacks)), this.env = Vn({}, { get: (e3, t3) => ({ $env: t3 }) }), this.Geo = Vn({}, { get: (e3, t3) => ns({ path: ["Geo"], method: t3 }) }), this.serverDate = ns({ path: [], method: "serverDate" }), this.RegExp = ns({ path: [], method: "RegExp" });
+    this._uniClient = e2, this._authCallBacks = {}, this._dbCallBacks = {}, e2._isDefault && (this._dbCallBacks = R("_globalUniCloudDatabaseCallback")), t2 || (this.auth = Xn(this._authCallBacks)), this._isJQL = t2, Object.assign(this, Xn(this._dbCallBacks)), this.env = Qn({}, { get: (e3, t3) => ({ $env: t3 }) }), this.Geo = Qn({}, { get: (e3, t3) => is({ path: ["Geo"], method: t3 }) }), this.serverDate = is({ path: [], method: "serverDate" }), this.RegExp = is({ path: [], method: "RegExp" });
   }
   getCloudEnv(e2) {
     if ("string" != typeof e2 || !e2.trim())
@@ -10612,9 +10717,9 @@ class rs extends class {
     }
     const i2 = this, o2 = this._isJQL ? "databaseForJQL" : "database";
     function a2(e3) {
-      return i2._callback("error", [e3]), M(q(o2, "fail"), e3).then(() => M(q(o2, "complete"), e3)).then(() => (r2(null, e3), Y(j, { type: W, content: e3 }), Promise.reject(e3)));
+      return i2._callback("error", [e3]), F(K(o2, "fail"), e3).then(() => F(K(o2, "complete"), e3)).then(() => (r2(null, e3), X(B, { type: J, content: e3 }), Promise.reject(e3)));
     }
-    const c2 = M(q(o2, "invoke")), u2 = this._uniClient;
+    const c2 = F(K(o2, "invoke")), u2 = this._uniClient;
     return c2.then(() => u2.callFunction({ name: "DCloud-clientDB", type: l, data: { action: e2, command: t2, multiCommand: n2 } })).then((e3) => {
       const { code: t3, message: n3, token: s3, tokenExpired: c3, systemInfo: u3 = [] } = e3.result;
       if (u3)
@@ -10625,9 +10730,9 @@ class rs extends class {
 详细信息：${s4}`), r3(i3);
         }
       if (t3) {
-        return a2(new te({ code: t3, message: n3, requestId: e3.requestId }));
+        return a2(new se({ code: t3, message: n3, requestId: e3.requestId }));
       }
-      e3.result.errCode = e3.result.errCode || e3.result.code, e3.result.errMsg = e3.result.errMsg || e3.result.message, s3 && c3 && (ie({ token: s3, tokenExpired: c3 }), this._callbackAuth("refreshToken", [{ token: s3, tokenExpired: c3 }]), this._callback("refreshToken", [{ token: s3, tokenExpired: c3 }]), Y(B, { token: s3, tokenExpired: c3 }));
+      e3.result.errCode = e3.result.errCode || e3.result.code, e3.result.errMsg = e3.result.errMsg || e3.result.message, s3 && c3 && (ae({ token: s3, tokenExpired: c3 }), this._callbackAuth("refreshToken", [{ token: s3, tokenExpired: c3 }]), this._callback("refreshToken", [{ token: s3, tokenExpired: c3 }]), X(H, { token: s3, tokenExpired: c3 }));
       const l2 = [{ prop: "affectedDocs", tips: "affectedDocs不再推荐使用，请使用inserted/deleted/updated/data.length替代" }, { prop: "code", tips: "code不再推荐使用，请使用errCode替代" }, { prop: "message", tips: "message不再推荐使用，请使用errMsg替代" }];
       for (let t4 = 0; t4 < l2.length; t4++) {
         const { prop: n4, tips: s4 } = l2[t4];
@@ -10637,33 +10742,33 @@ class rs extends class {
         }
       }
       return function(e4) {
-        return M(q(o2, "success"), e4).then(() => M(q(o2, "complete"), e4)).then(() => {
+        return F(K(o2, "success"), e4).then(() => F(K(o2, "complete"), e4)).then(() => {
           r2(e4, null);
           const t4 = i2._parseResult(e4);
-          return Y(j, { type: W, content: t4 }), Promise.resolve(t4);
+          return X(B, { type: J, content: t4 }), Promise.resolve(t4);
         });
       }(e3);
     }, (e3) => {
       /fc_function_not_found|FUNCTION_NOT_FOUND/g.test(e3.message) && console.warn("clientDB未初始化，请在web控制台保存一次schema以开启clientDB");
-      return a2(new te({ code: e3.code || "SYSTEM_ERROR", message: e3.message, requestId: e3.requestId }));
+      return a2(new se({ code: e3.code || "SYSTEM_ERROR", message: e3.message, requestId: e3.requestId }));
     });
   }
 }
-const is = "token无效，跳转登录页面", os = "token过期，跳转登录页面", as = { TOKEN_INVALID_TOKEN_EXPIRED: os, TOKEN_INVALID_INVALID_CLIENTID: is, TOKEN_INVALID: is, TOKEN_INVALID_WRONG_TOKEN: is, TOKEN_INVALID_ANONYMOUS_USER: is }, cs = { "uni-id-token-expired": os, "uni-id-check-token-failed": is, "uni-id-token-not-exist": is, "uni-id-check-device-feature-failed": is };
-function us(e2, t2) {
+const cs = "token无效，跳转登录页面", us = "token过期，跳转登录页面", ls = { TOKEN_INVALID_TOKEN_EXPIRED: us, TOKEN_INVALID_INVALID_CLIENTID: cs, TOKEN_INVALID: cs, TOKEN_INVALID_WRONG_TOKEN: cs, TOKEN_INVALID_ANONYMOUS_USER: cs }, hs = { "uni-id-token-expired": us, "uni-id-check-token-failed": cs, "uni-id-token-not-exist": cs, "uni-id-check-device-feature-failed": cs };
+function ds(e2, t2) {
   let n2 = "";
   return n2 = e2 ? `${e2}/${t2}` : t2, n2.replace(/^\//, "");
 }
-function ls(e2 = [], t2 = "") {
+function ps(e2 = [], t2 = "") {
   const n2 = [], s2 = [];
   return e2.forEach((e3) => {
-    true === e3.needLogin ? n2.push(us(t2, e3.path)) : false === e3.needLogin && s2.push(us(t2, e3.path));
+    true === e3.needLogin ? n2.push(ds(t2, e3.path)) : false === e3.needLogin && s2.push(ds(t2, e3.path));
   }), { needLoginPage: n2, notNeedLoginPage: s2 };
 }
-function hs(e2) {
+function fs(e2) {
   return e2.split("?")[0].replace(/^\//, "");
 }
-function ds() {
+function gs() {
   return function(e2) {
     let t2 = e2 && e2.$page && e2.$page.fullPath || "";
     return t2 ? ("/" !== t2.charAt(0) && (t2 = "/" + t2), t2) : t2;
@@ -10672,32 +10777,32 @@ function ds() {
     return e2[e2.length - 1];
   }());
 }
-function ps() {
-  return hs(ds());
+function ms() {
+  return fs(gs());
 }
-function fs(e2 = "", t2 = {}) {
+function ys(e2 = "", t2 = {}) {
   if (!e2)
     return false;
   if (!(t2 && t2.list && t2.list.length))
     return false;
-  const n2 = t2.list, s2 = hs(e2);
+  const n2 = t2.list, s2 = fs(e2);
   return n2.some((e3) => e3.pagePath === s2);
 }
-const gs = !!e.uniIdRouter;
-const { loginPage: ms, routerNeedLogin: ys, resToLogin: _s, needLoginPage: ws, notNeedLoginPage: vs, loginPageInTabBar: Is } = function({ pages: t2 = [], subPackages: n2 = [], uniIdRouter: s2 = {}, tabBar: r2 = {} } = e) {
-  const { loginPage: i2, needLogin: o2 = [], resToLogin: a2 = true } = s2, { needLoginPage: c2, notNeedLoginPage: u2 } = ls(t2), { needLoginPage: l2, notNeedLoginPage: h2 } = function(e2 = []) {
+const _s = !!e.uniIdRouter;
+const { loginPage: ws, routerNeedLogin: vs, resToLogin: Is, needLoginPage: Ss, notNeedLoginPage: bs, loginPageInTabBar: ks } = function({ pages: t2 = [], subPackages: n2 = [], uniIdRouter: s2 = {}, tabBar: r2 = {} } = e) {
+  const { loginPage: i2, needLogin: o2 = [], resToLogin: a2 = true } = s2, { needLoginPage: c2, notNeedLoginPage: u2 } = ps(t2), { needLoginPage: l2, notNeedLoginPage: h2 } = function(e2 = []) {
     const t3 = [], n3 = [];
     return e2.forEach((e3) => {
-      const { root: s3, pages: r3 = [] } = e3, { needLoginPage: i3, notNeedLoginPage: o3 } = ls(r3, s3);
+      const { root: s3, pages: r3 = [] } = e3, { needLoginPage: i3, notNeedLoginPage: o3 } = ps(r3, s3);
       t3.push(...i3), n3.push(...o3);
     }), { needLoginPage: t3, notNeedLoginPage: n3 };
   }(n2);
-  return { loginPage: i2, routerNeedLogin: o2, resToLogin: a2, needLoginPage: [...c2, ...l2], notNeedLoginPage: [...u2, ...h2], loginPageInTabBar: fs(i2, r2) };
+  return { loginPage: i2, routerNeedLogin: o2, resToLogin: a2, needLoginPage: [...c2, ...l2], notNeedLoginPage: [...u2, ...h2], loginPageInTabBar: ys(i2, r2) };
 }();
-if (ws.indexOf(ms) > -1)
-  throw new Error(`Login page [${ms}] should not be "needLogin", please check your pages.json`);
-function Ss(e2) {
-  const t2 = ps();
+if (Ss.indexOf(ws) > -1)
+  throw new Error(`Login page [${ws}] should not be "needLogin", please check your pages.json`);
+function As(e2) {
+  const t2 = ms();
   if ("/" === e2.charAt(0))
     return e2;
   const [n2, s2] = e2.split("?"), r2 = n2.replace(/^\//, "").split("/"), i2 = t2.split("/");
@@ -10708,68 +10813,68 @@ function Ss(e2) {
   }
   return "" === i2[0] && i2.shift(), "/" + i2.join("/") + (s2 ? "?" + s2 : "");
 }
-function bs(e2) {
-  const t2 = hs(Ss(e2));
-  return !(vs.indexOf(t2) > -1) && (ws.indexOf(t2) > -1 || ys.some((t3) => function(e3, t4) {
+function Cs(e2) {
+  const t2 = fs(As(e2));
+  return !(bs.indexOf(t2) > -1) && (Ss.indexOf(t2) > -1 || vs.some((t3) => function(e3, t4) {
     return new RegExp(t4).test(e3);
   }(e2, t3)));
 }
-function ks({ redirect: e2 }) {
-  const t2 = hs(e2), n2 = hs(ms);
-  return ps() !== n2 && t2 !== n2;
+function Ps({ redirect: e2 }) {
+  const t2 = fs(e2), n2 = fs(ws);
+  return ms() !== n2 && t2 !== n2;
 }
-function As({ api: e2, redirect: t2 } = {}) {
-  if (!t2 || !ks({ redirect: t2 }))
+function Ts({ api: e2, redirect: t2 } = {}) {
+  if (!t2 || !Ps({ redirect: t2 }))
     return;
   const n2 = function(e3, t3) {
     return "/" !== e3.charAt(0) && (e3 = "/" + e3), t3 ? e3.indexOf("?") > -1 ? e3 + `&uniIdRedirectUrl=${encodeURIComponent(t3)}` : e3 + `?uniIdRedirectUrl=${encodeURIComponent(t3)}` : e3;
-  }(ms, t2);
-  Is ? "navigateTo" !== e2 && "redirectTo" !== e2 || (e2 = "switchTab") : "switchTab" === e2 && (e2 = "navigateTo");
+  }(ws, t2);
+  ks ? "navigateTo" !== e2 && "redirectTo" !== e2 || (e2 = "switchTab") : "switchTab" === e2 && (e2 = "navigateTo");
   const s2 = { navigateTo: index.navigateTo, redirectTo: index.redirectTo, switchTab: index.switchTab, reLaunch: index.reLaunch };
   setTimeout(() => {
     s2[e2]({ url: n2 });
   }, 0);
 }
-function Cs({ url: e2 } = {}) {
+function xs({ url: e2 } = {}) {
   const t2 = { abortLoginPageJump: false, autoToLoginPage: false }, n2 = function() {
-    const { token: e3, tokenExpired: t3 } = re();
+    const { token: e3, tokenExpired: t3 } = oe();
     let n3;
     if (e3) {
       if (t3 < Date.now()) {
         const e4 = "uni-id-token-expired";
-        n3 = { errCode: e4, errMsg: cs[e4] };
+        n3 = { errCode: e4, errMsg: hs[e4] };
       }
     } else {
       const e4 = "uni-id-check-token-failed";
-      n3 = { errCode: e4, errMsg: cs[e4] };
+      n3 = { errCode: e4, errMsg: hs[e4] };
     }
     return n3;
   }();
-  if (bs(e2) && n2) {
+  if (Cs(e2) && n2) {
     n2.uniIdRedirectUrl = e2;
-    if (z($).length > 0)
+    if (G(W).length > 0)
       return setTimeout(() => {
-        Y($, n2);
+        X(W, n2);
       }, 0), t2.abortLoginPageJump = true, t2;
     t2.autoToLoginPage = true;
   }
   return t2;
 }
-function Ps() {
+function Os() {
   !function() {
-    const e3 = ds(), { abortLoginPageJump: t2, autoToLoginPage: n2 } = Cs({ url: e3 });
-    t2 || n2 && As({ api: "redirectTo", redirect: e3 });
+    const e3 = gs(), { abortLoginPageJump: t2, autoToLoginPage: n2 } = xs({ url: e3 });
+    t2 || n2 && Ts({ api: "redirectTo", redirect: e3 });
   }();
   const e2 = ["navigateTo", "redirectTo", "reLaunch", "switchTab"];
   for (let t2 = 0; t2 < e2.length; t2++) {
     const n2 = e2[t2];
     index.addInterceptor(n2, { invoke(e3) {
-      const { abortLoginPageJump: t3, autoToLoginPage: s2 } = Cs({ url: e3.url });
-      return t3 ? e3 : s2 ? (As({ api: n2, redirect: Ss(e3.url) }), false) : e3;
+      const { abortLoginPageJump: t3, autoToLoginPage: s2 } = xs({ url: e3.url });
+      return t3 ? e3 : s2 ? (Ts({ api: n2, redirect: As(e3.url) }), false) : e3;
     } });
   }
 }
-function Ts() {
+function Es() {
   this.onResponse((e2) => {
     const { type: t2, content: n2 } = e2;
     let s2 = false;
@@ -10779,7 +10884,7 @@ function Ts() {
           if ("object" != typeof e3)
             return false;
           const { errCode: t3 } = e3 || {};
-          return t3 in cs;
+          return t3 in hs;
         }(n2);
         break;
       case "clientdb":
@@ -10787,51 +10892,51 @@ function Ts() {
           if ("object" != typeof e3)
             return false;
           const { errCode: t3 } = e3 || {};
-          return t3 in as;
+          return t3 in ls;
         }(n2);
     }
     s2 && function(e3 = {}) {
-      const t3 = z($);
-      Z().then(() => {
-        const n3 = ds();
-        if (n3 && ks({ redirect: n3 }))
-          return t3.length > 0 ? Y($, Object.assign({ uniIdRedirectUrl: n3 }, e3)) : void (ms && As({ api: "navigateTo", redirect: n3 }));
+      const t3 = G(W);
+      te().then(() => {
+        const n3 = gs();
+        if (n3 && Ps({ redirect: n3 }))
+          return t3.length > 0 ? X(W, Object.assign({ uniIdRedirectUrl: n3 }, e3)) : void (ws && Ts({ api: "navigateTo", redirect: n3 }));
       });
     }(n2);
   });
 }
-function xs(e2) {
+function Ls(e2) {
   !function(e3) {
     e3.onResponse = function(e4) {
-      V(j, e4);
+      Y(B, e4);
     }, e3.offResponse = function(e4) {
-      G(j, e4);
+      Q(B, e4);
     };
   }(e2), function(e3) {
     e3.onNeedLogin = function(e4) {
-      V($, e4);
+      Y(W, e4);
     }, e3.offNeedLogin = function(e4) {
-      G($, e4);
-    }, gs && (L("_globalUniCloudStatus").needLoginInit || (L("_globalUniCloudStatus").needLoginInit = true, Z().then(() => {
-      Ps.call(e3);
-    }), _s && Ts.call(e3)));
+      Q(W, e4);
+    }, _s && (R("_globalUniCloudStatus").needLoginInit || (R("_globalUniCloudStatus").needLoginInit = true, te().then(() => {
+      Os.call(e3);
+    }), Is && Es.call(e3)));
   }(e2), function(e3) {
     e3.onRefreshToken = function(e4) {
-      V(B, e4);
+      Y(H, e4);
     }, e3.offRefreshToken = function(e4) {
-      G(B, e4);
+      Q(H, e4);
     };
   }(e2);
 }
-let Os;
-const Es = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=", Ls = /^(?:[A-Za-z\d+/]{4})*?(?:[A-Za-z\d+/]{2}(?:==)?|[A-Za-z\d+/]{3}=?)?$/;
-function Rs() {
-  const e2 = re().token || "", t2 = e2.split(".");
+let Rs;
+const Us = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=", Ns = /^(?:[A-Za-z\d+/]{4})*?(?:[A-Za-z\d+/]{2}(?:==)?|[A-Za-z\d+/]{3}=?)?$/;
+function Ds() {
+  const e2 = oe().token || "", t2 = e2.split(".");
   if (!e2 || 3 !== t2.length)
     return { uid: null, role: [], permission: [], tokenExpired: 0 };
   let n2;
   try {
-    n2 = JSON.parse((s2 = t2[1], decodeURIComponent(Os(s2).split("").map(function(e3) {
+    n2 = JSON.parse((s2 = t2[1], decodeURIComponent(Rs(s2).split("").map(function(e3) {
       return "%" + ("00" + e3.charCodeAt(0).toString(16)).slice(-2);
     }).join(""))));
   } catch (e3) {
@@ -10840,16 +10945,16 @@ function Rs() {
   var s2;
   return n2.tokenExpired = 1e3 * n2.exp, delete n2.exp, delete n2.iat, n2;
 }
-Os = "function" != typeof atob ? function(e2) {
-  if (e2 = String(e2).replace(/[\t\n\f\r ]+/g, ""), !Ls.test(e2))
+Rs = "function" != typeof atob ? function(e2) {
+  if (e2 = String(e2).replace(/[\t\n\f\r ]+/g, ""), !Ns.test(e2))
     throw new Error("Failed to execute 'atob' on 'Window': The string to be decoded is not correctly encoded.");
   var t2;
   e2 += "==".slice(2 - (3 & e2.length));
   for (var n2, s2, r2 = "", i2 = 0; i2 < e2.length; )
-    t2 = Es.indexOf(e2.charAt(i2++)) << 18 | Es.indexOf(e2.charAt(i2++)) << 12 | (n2 = Es.indexOf(e2.charAt(i2++))) << 6 | (s2 = Es.indexOf(e2.charAt(i2++))), r2 += 64 === n2 ? String.fromCharCode(t2 >> 16 & 255) : 64 === s2 ? String.fromCharCode(t2 >> 16 & 255, t2 >> 8 & 255) : String.fromCharCode(t2 >> 16 & 255, t2 >> 8 & 255, 255 & t2);
+    t2 = Us.indexOf(e2.charAt(i2++)) << 18 | Us.indexOf(e2.charAt(i2++)) << 12 | (n2 = Us.indexOf(e2.charAt(i2++))) << 6 | (s2 = Us.indexOf(e2.charAt(i2++))), r2 += 64 === n2 ? String.fromCharCode(t2 >> 16 & 255) : 64 === s2 ? String.fromCharCode(t2 >> 16 & 255, t2 >> 8 & 255) : String.fromCharCode(t2 >> 16 & 255, t2 >> 8 & 255, 255 & t2);
   return r2;
 } : atob;
-var Us = n(function(e2, t2) {
+var qs = n(function(e2, t2) {
   Object.defineProperty(t2, "__esModule", { value: true });
   const n2 = "chooseAndUploadFile:ok", s2 = "chooseAndUploadFile:fail";
   function r2(e3, t3) {
@@ -10924,9 +11029,9 @@ var Us = n(function(e2, t2) {
       }(t3), t3);
     };
   };
-}), Ns = t(Us);
-const Ds = "manual";
-function Ms(e2) {
+}), Ms = t(qs);
+const Fs = "manual";
+function Ks(e2) {
   return { props: { localdata: { type: Array, default: () => [] }, options: { type: [Object, Array], default: () => ({}) }, spaceInfo: { type: Object, default: () => ({}) }, collection: { type: [String, Array], default: "" }, action: { type: String, default: "" }, field: { type: String, default: "" }, orderby: { type: String, default: "" }, where: { type: [String, Object], default: "" }, pageData: { type: String, default: "add" }, pageCurrent: { type: Number, default: 1 }, pageSize: { type: Number, default: 20 }, getcount: { type: [Boolean, String], default: false }, gettree: { type: [Boolean, String], default: false }, gettreepath: { type: [Boolean, String], default: false }, startwith: { type: String, default: "" }, limitlevel: { type: Number, default: 10 }, groupby: { type: String, default: "" }, groupField: { type: String, default: "" }, distinct: { type: [Boolean, String], default: false }, foreignKey: { type: String, default: "" }, loadtime: { type: String, default: "auto" }, manual: { type: Boolean, default: false } }, data: () => ({ mixinDatacomLoading: false, mixinDatacomHasMore: false, mixinDatacomResData: [], mixinDatacomErrorMessage: "", mixinDatacomPage: {}, mixinDatacomError: null }), created() {
     this.mixinDatacomPage = { current: this.pageCurrent, size: this.pageSize, count: 0 }, this.$watch(() => {
       var e3 = [];
@@ -10934,7 +11039,7 @@ function Ms(e2) {
         e3.push(this[t2]);
       }), e3;
     }, (e3, t2) => {
-      if (this.loadtime === Ds)
+      if (this.loadtime === Fs)
         return;
       let n2 = false;
       const s2 = [];
@@ -10977,7 +11082,7 @@ function Ms(e2) {
     return f2 && (m2.getTree = y2), g2 && (m2.getTreePath = y2), n2 = n2.skip(d2 * (h2 - 1)).limit(d2).get(m2), n2;
   } } };
 }
-function qs(e2) {
+function js(e2) {
   return function(t2, n2 = {}) {
     n2 = function(e3, t3 = {}) {
       return e3.customUI = t3.customUI || e3.customUI, e3.parseSystemError = t3.parseSystemError || e3.parseSystemError, Object.assign(e3.loadingOptions, t3.loadingOptions), Object.assign(e3.errorOptions, t3.errorOptions), "object" == typeof t3.secretMethods && (e3.secretMethods = t3.secretMethods), e3;
@@ -10995,11 +11100,11 @@ function qs(e2) {
           const r3 = n3 ? n3({ params: s4 }) : {};
           let i3, o3;
           try {
-            return await M(q(t3, "invoke"), { ...r3 }), i3 = await e3(...s4), await M(q(t3, "success"), { ...r3, result: i3 }), i3;
+            return await F(K(t3, "invoke"), { ...r3 }), i3 = await e3(...s4), await F(K(t3, "success"), { ...r3, result: i3 }), i3;
           } catch (e4) {
-            throw o3 = e4, await M(q(t3, "fail"), { ...r3, error: o3 }), o3;
+            throw o3 = e4, await F(K(t3, "fail"), { ...r3, error: o3 }), o3;
           } finally {
-            await M(q(t3, "complete"), o3 ? { ...r3, error: o3 } : { ...r3, result: i3 });
+            await F(K(t3, "complete"), o3 ? { ...r3, error: o3 } : { ...r3, result: i3 });
           }
         };
       }({ fn: async function s4(...l2) {
@@ -11014,10 +11119,10 @@ function qs(e2) {
         try {
           h2 = await e2.callFunction(d2);
         } catch (e3) {
-          p2 = true, h2 = { result: new te(e3) };
+          p2 = true, h2 = { result: new se(e3) };
         }
         const { errSubject: f2, errCode: g2, errMsg: m2, newToken: y2 } = h2.result || {};
-        if (a2 && index.hideLoading(), y2 && y2.token && y2.tokenExpired && (ie(y2), Y(B, { ...y2 })), g2) {
+        if (a2 && index.hideLoading(), y2 && y2.token && y2.tokenExpired && (ae(y2), X(H, { ...y2 })), g2) {
           let e3 = m2;
           if (p2 && o2) {
             e3 = (await o2({ objectName: t2, methodName: c2, params: l2, errSubject: f2, errCode: g2, errMsg: m2 })).errMsg || m2;
@@ -11042,21 +11147,21 @@ function qs(e2) {
                   return s4(...l2);
               }
             }
-          const n3 = new te({ subject: f2, code: g2, message: m2, requestId: h2.requestId });
-          throw n3.detail = h2.result, Y(j, { type: J, content: n3 }), n3;
+          const n3 = new se({ subject: f2, code: g2, message: m2, requestId: h2.requestId });
+          throw n3.detail = h2.result, X(B, { type: V, content: n3 }), n3;
         }
-        return Y(j, { type: J, content: h2.result }), h2.result;
+        return X(B, { type: V, content: h2.result }), h2.result;
       }, interceptorName: "callObject", getCallbackArgs: function({ params: e3 } = {}) {
         return { objectName: t2, methodName: c2, params: e3 };
       } });
     } });
   };
 }
-function Fs(e2) {
-  return L("_globalUniCloudSecureNetworkCache__{spaceId}".replace("{spaceId}", e2.config.spaceId));
+function $s(e2) {
+  return R("_globalUniCloudSecureNetworkCache__{spaceId}".replace("{spaceId}", e2.config.spaceId));
 }
-async function Ks({ openid: e2, callLoginByWeixin: t2 = false } = {}) {
-  const n2 = Fs(this);
+async function Bs({ openid: e2, callLoginByWeixin: t2 = false } = {}) {
+  const n2 = $s(this);
   if (e2 && t2)
     throw new Error("[SecureNetwork] openid and callLoginByWeixin cannot be passed at the same time");
   if (e2)
@@ -11070,23 +11175,23 @@ async function Ks({ openid: e2, callLoginByWeixin: t2 = false } = {}) {
   }), r2 = this.importObject("uni-id-co", { customUI: true });
   return await r2.secureNetworkHandshakeByWeixin({ code: s2, callLoginByWeixin: t2 }), n2.mpWeixinCode = s2, { code: s2 };
 }
-async function js(e2) {
-  const t2 = Fs(this);
-  return t2.initPromise || (t2.initPromise = Ks.call(this, e2).then((e3) => e3).catch((e3) => {
+async function Ws(e2) {
+  const t2 = $s(this);
+  return t2.initPromise || (t2.initPromise = Bs.call(this, e2).then((e3) => e3).catch((e3) => {
     throw delete t2.initPromise, e3;
   })), t2.initPromise;
 }
-function $s(e2) {
+function Hs(e2) {
   return function({ openid: t2, callLoginByWeixin: n2 = false } = {}) {
-    return js.call(e2, { openid: t2, callLoginByWeixin: n2 });
+    return Ws.call(e2, { openid: t2, callLoginByWeixin: n2 });
   };
 }
-function Bs(e2) {
+function Js(e2) {
   !function(e3) {
-    le = e3;
+    de = e3;
   }(e2);
 }
-function Ws(e2) {
+function zs(e2) {
   const t2 = { getSystemInfo: index.getSystemInfo, getPushClientId: index.getPushClientId };
   return function(n2) {
     return new Promise((s2, r2) => {
@@ -11098,7 +11203,7 @@ function Ws(e2) {
     });
   };
 }
-class Hs extends class {
+class Vs extends class {
   constructor() {
     this._callback = {};
   }
@@ -11139,7 +11244,7 @@ class Hs extends class {
     super(), this._uniPushMessageCallback = this._receivePushMessage.bind(this), this._currentMessageId = -1, this._payloadQueue = [];
   }
   init() {
-    return Promise.all([Ws("getSystemInfo")(), Ws("getPushClientId")()]).then(([{ appId: e2 } = {}, { cid: t2 } = {}] = []) => {
+    return Promise.all([zs("getSystemInfo")(), zs("getPushClientId")()]).then(([{ appId: e2 } = {}, { cid: t2 } = {}] = []) => {
       if (!e2)
         throw new Error("Invalid appId, please check the manifest.json file");
       if (!t2)
@@ -11195,11 +11300,11 @@ class Hs extends class {
     this._destroy(), this.emit("close");
   }
 }
-async function Js(e2) {
+async function Gs(e2) {
   const t2 = e2.__dev__;
   if (!t2.debugInfo)
     return;
-  const { address: n2, servePort: s2 } = t2.debugInfo, { address: r2 } = await At(n2, s2);
+  const { address: n2, servePort: s2 } = t2.debugInfo, { address: r2 } = await Tt(n2, s2);
   if (r2)
     return t2.localAddress = r2, void (t2.localPort = s2);
   const i2 = console["warn"];
@@ -11208,7 +11313,7 @@ async function Js(e2) {
     throw new Error(o2);
   i2(o2);
 }
-function zs(e2) {
+function Ys(e2) {
   e2._initPromiseHub || (e2._initPromiseHub = new v({ createPromise: function() {
     let t2 = Promise.resolve();
     var n2;
@@ -11221,11 +11326,11 @@ function zs(e2) {
     return t2.then(() => s2.getLoginState()).then((e3) => e3 ? Promise.resolve() : s2.signInAnonymously());
   } }));
 }
-const Vs = { tcb: bt, tencent: bt, aliyun: fe, private: Tt, dcloud: Tt, alipay: qt };
-let Gs = new class {
+const Qs = { tcb: Ct, tencent: Ct, aliyun: me, private: Et, dcloud: Et, alipay: jt };
+let Xs = new class {
   init(e2) {
     let t2 = {};
-    const n2 = Vs[e2.provider];
+    const n2 = Qs[e2.provider];
     if (!n2)
       throw new Error("未提供正确的provider参数");
     t2 = n2.init(e2), function(e3) {
@@ -11234,12 +11339,12 @@ let Gs = new class {
       const n3 = P;
       n3 && !n3.code && (t3.debugInfo = n3);
       const s2 = new v({ createPromise: function() {
-        return Js(e3);
+        return Gs(e3);
       } });
       t3.initLocalNetwork = function() {
         return s2.exec();
       };
-    }(t2), zs(t2), Jn(t2), function(e3) {
+    }(t2), Ys(t2), Gn(t2), function(e3) {
       const t3 = e3.uploadFile;
       e3.uploadFile = function(e4) {
         return t3.call(this, e4);
@@ -11250,20 +11355,20 @@ let Gs = new class {
           return e3.init(t3).database();
         if (this._database)
           return this._database;
-        const n3 = ss(rs, { uniClient: e3 });
+        const n3 = os(as, { uniClient: e3 });
         return this._database = n3, n3;
       }, e3.databaseForJQL = function(t3) {
         if (t3 && Object.keys(t3).length > 0)
           return e3.init(t3).databaseForJQL();
         if (this._databaseForJQL)
           return this._databaseForJQL;
-        const n3 = ss(rs, { uniClient: e3, isJQL: true });
+        const n3 = os(as, { uniClient: e3, isJQL: true });
         return this._databaseForJQL = n3, n3;
       };
     }(t2), function(e3) {
-      e3.getCurrentUserInfo = Rs, e3.chooseAndUploadFile = Ns.initChooseAndUploadFile(e3), Object.assign(e3, { get mixinDatacom() {
-        return Ms(e3);
-      } }), e3.SSEChannel = Hs, e3.initSecureNetworkByWeixin = $s(e3), e3.setCustomClientInfo = Bs, e3.importObject = qs(e3);
+      e3.getCurrentUserInfo = Ds, e3.chooseAndUploadFile = Ms.initChooseAndUploadFile(e3), Object.assign(e3, { get mixinDatacom() {
+        return Ks(e3);
+      } }), e3.SSEChannel = Vs, e3.initSecureNetworkByWeixin = Hs(e3), e3.setCustomClientInfo = Js, e3.importObject = js(e3);
     }(t2);
     return ["callFunction", "uploadFile", "deleteFile", "getTempFileURL", "downloadFile", "chooseAndUploadFile"].forEach((e3) => {
       if (!t2[e3])
@@ -11280,13 +11385,13 @@ let Gs = new class {
           }
           const r2 = "callFunction" === t3 && !s2, i2 = this._initPromiseHub.exec();
           n4 = n4 || {};
-          const { success: o2, fail: a2, complete: u2 } = ee(n4), l2 = i2.then(() => s2 ? Promise.resolve() : M(q(t3, "invoke"), n4)).then(() => e4.call(this, n4)).then((e5) => s2 ? Promise.resolve(e5) : M(q(t3, "success"), e5).then(() => M(q(t3, "complete"), e5)).then(() => (r2 && Y(j, { type: H, content: e5 }), Promise.resolve(e5))), (e5) => s2 ? Promise.reject(e5) : M(q(t3, "fail"), e5).then(() => M(q(t3, "complete"), e5)).then(() => (Y(j, { type: H, content: e5 }), Promise.reject(e5))));
+          const { success: o2, fail: a2, complete: u2 } = ne(n4), l2 = i2.then(() => s2 ? Promise.resolve() : F(K(t3, "invoke"), n4)).then(() => e4.call(this, n4)).then((e5) => s2 ? Promise.resolve(e5) : F(K(t3, "success"), e5).then(() => F(K(t3, "complete"), e5)).then(() => (r2 && X(B, { type: z, content: e5 }), Promise.resolve(e5))), (e5) => s2 ? Promise.reject(e5) : F(K(t3, "fail"), e5).then(() => F(K(t3, "complete"), e5)).then(() => (X(B, { type: z, content: e5 }), Promise.reject(e5))));
           if (!(o2 || a2 || u2))
             return l2;
           l2.then((e5) => {
-            o2 && o2(e5), u2 && u2(e5), r2 && Y(j, { type: H, content: e5 });
+            o2 && o2(e5), u2 && u2(e5), r2 && X(B, { type: z, content: e5 });
           }, (e5) => {
-            a2 && a2(e5), u2 && u2(e5), r2 && Y(j, { type: H, content: e5 });
+            a2 && a2(e5), u2 && u2(e5), r2 && X(B, { type: z, content: e5 });
           });
         };
       }(t2[e3], e3)).bind(t2);
@@ -11297,23 +11402,24 @@ let Gs = new class {
   const e2 = T;
   let t2 = {};
   if (e2 && 1 === e2.length)
-    t2 = e2[0], Gs = Gs.init(t2), Gs._isDefault = true;
+    t2 = e2[0], Xs = Xs.init(t2), Xs._isDefault = true;
   else {
     const t3 = ["auth", "callFunction", "uploadFile", "deleteFile", "getTempFileURL", "downloadFile", "database", "getCurrentUSerInfo", "importObject"];
     let n2;
     n2 = e2 && e2.length > 0 ? "应用有多个服务空间，请通过uniCloud.init方法指定要使用的服务空间" : "应用未关联服务空间，请在uniCloud目录右键关联服务空间", t3.forEach((e3) => {
-      Gs[e3] = function() {
-        return console.error(n2), Promise.reject(new te({ code: "SYS_ERR", message: n2 }));
+      Xs[e3] = function() {
+        return console.error(n2), Promise.reject(new se({ code: "SYS_ERR", message: n2 }));
       };
     });
   }
-  Object.assign(Gs, { get mixinDatacom() {
-    return Ms(Gs);
-  } }), xs(Gs), Gs.addInterceptor = N, Gs.removeInterceptor = D, Gs.interceptObject = F;
+  if (Object.assign(Xs, { get mixinDatacom() {
+    return Ks(Xs);
+  } }), Ls(Xs), Xs.addInterceptor = q, Xs.removeInterceptor = M, Xs.interceptObject = j, "web" === C)
+    ;
 })();
-var Ys = Gs;
+var Zs = Xs;
 exports.Pinia = Pinia;
-exports.Ys = Ys;
+exports.Zs = Zs;
 exports._export_sfc = _export_sfc;
 exports.computed = computed;
 exports.createPinia = createPinia;

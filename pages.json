@@ -23,6 +23,13 @@
 				"navigationBarTitleText": "Models",
 				"enablePullDownRefresh": false
 			}
+		},
+		{
+			"path": "pages/models/pred",
+			"style": {
+				"navigationBarTitleText": "Predict",
+				"enablePullDownRefresh": false
+			}
 		}
 	],
 	"tabBar": {

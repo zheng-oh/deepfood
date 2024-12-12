@@ -1,7 +1,0 @@
-{
-  "navigationBarTitleText": "Display",
-  "enablePullDownRefresh": false,
-  "usingComponents": {
-    "qiun-data-charts": "../../components/qiunCharts/qiun-data-charts/qiun-data-charts"
-  }
-}

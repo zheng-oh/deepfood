@@ -2,7 +2,8 @@
   "pages": [
     "pages/index/index",
     "pages/tools/pickercolor",
-    "pages/models/models"
+    "pages/models/models",
+    "pages/models/pred"
   ],
   "window": {
     "navigationBarTextStyle": "black",

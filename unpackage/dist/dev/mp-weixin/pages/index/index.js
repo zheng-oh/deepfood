@@ -2,14 +2,6 @@
 const common_vendor = require("../../common/vendor.js");
 const common_assets = require("../../common/assets.js");
 const stores_img = require("../../stores/img.js");
-if (!Array) {
-  const _easycom_uni_card2 = common_vendor.resolveComponent("uni-card");
-  _easycom_uni_card2();
-}
-const _easycom_uni_card = () => "../../uni_modules/uni-card/components/uni-card/uni-card.js";
-if (!Math) {
-  _easycom_uni_card();
-}
 const _sfc_main = {
   __name: "index",
   setup(__props) {

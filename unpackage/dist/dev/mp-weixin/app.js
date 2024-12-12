@@ -6,6 +6,7 @@ if (!Math) {
   "./pages/index/index.js";
   "./pages/tools/pickercolor.js";
   "./pages/models/models.js";
+  "./pages/models/pred.js";
 }
 const _sfc_main = {
   onLaunch: function() {
